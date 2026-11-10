@@ -1,0 +1,5 @@
+# Production listens on the loopback address and port 8004. A release build reads this file,
+# and ROCKET_ADDRESS or ROCKET_PORT in the environment override it. A debug build keeps Rocket's default.
+[release]
+address = "127.0.0.1"
+port = 8004

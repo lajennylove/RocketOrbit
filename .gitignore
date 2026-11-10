@@ -1,4 +1,9 @@
 /target
 /node_modules
+/public/build
+/public/hot
+/.playwright-mcp
 .env
+.env.*
+.cargo/config.toml
 /.claude/

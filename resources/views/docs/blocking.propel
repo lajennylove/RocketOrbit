@@ -1,0 +1,58 @@
+@extends('layouts.app')
+
+@section('title')Blocking API@endsection
+@section('description')The Orbit blocking API behind the blocking feature: the same queries without async, how it runs on its own runtime, spawn_blocking, the BlockingInRuntime error, and transactions that roll back on a panic.@endsection
+
+@section('content')
+  <h1>{{ $title }}</h1>
+  <p>With the <code>blocking</code> feature, <code>orbit_orm::blocking</code> offers the same queries without <code>async</code>. Each call blocks the calling thread until its query finishes. The feature is off by default, and the install steps are in <a href="/docs/install">Installation</a>.</p>
+
+  <h2>Queries</h2>
+  <p>Build the query with the usual methods, then call <code>blocking()</code> before a terminal method:</p>
+  <pre class="line-numbers"><code class="language-rust">use orbit_orm::blocking::Database;
+
+let db = Database::connect("mysql://user:password@127.0.0.1/app")?;
+let post = Post::query().blocking().find_or_fail(&amp;db, 1)?;</code></pre>
+  <p>The terminal methods are <code>get</code>, <code>first</code>, <code>first_or_fail</code>, <code>find</code>, <code>find_or_fail</code>, <code>count</code>, <code>exists</code>, <code>insert</code>, <code>replace</code>, <code>update</code> and <code>delete</code>. They take the same arguments and return the same values as their async versions in <a href="/docs/queries">Queries</a>. Each one takes <code>&amp;db</code> or a transaction.</p>
+
+  <h2>How it runs</h2>
+  <p><code>blocking::Database::connect</code> builds a current-thread Tokio runtime, and the database owns it. Each call runs the async query on that runtime and returns its output. The calling thread is blocked until the query finishes.</p>
+
+  <h2>Where to call it</h2>
+  <p>Call it from a thread that may block, such as one started with <code>tokio::task::spawn_blocking</code>. Share the database with an <code>Arc</code>:</p>
+  <pre class="line-numbers"><code class="language-rust">use std::sync::Arc;
+
+use orbit_orm::blocking::Database;
+
+// Connect on a thread that runs no async code. See "Async threads" below.
+let db = Arc::new(Database::connect("mysql://user:password@127.0.0.1/app")?);
+
+let worker = Arc::clone(&amp;db);
+let post = tokio::task::spawn_blocking(move || {
+    Post::query().blocking().find_or_fail(&amp;*worker, 1)
+})
+.await
+.expect("the blocking task finished")?;</code></pre>
+
+  <h2 id="async-threads">Async threads</h2>
+  <p>A blocking call on a thread that runs async code returns <code>Error::BlockingInRuntime</code>. This covers queries, <code>transaction</code>, and <code>connect</code>. Tokio refuses to block on such a thread, and Orbit turns Tokio's panic into this error, so the thread is not stalled. Tokio still prints its own panic message to stderr before the error is returned. Dropping a <code>blocking::Database</code> on such a thread is safe, because its runtime is shut down in the background.</p>
+
+  <h2>Transactions</h2>
+  <p><code>db.transaction</code> takes a synchronous closure, which receives the transaction. Pass the transaction to blocking queries as <code>tx</code>. A query given <code>&amp;db</code> runs on the pool, outside the transaction:</p>
+  <pre class="line-numbers"><code class="language-rust">db.transaction(|tx| {
+    Post::query().blocking().insert(tx, &amp;[("title", "Hello".into())])?;
+    Ok::&lt;_, orbit_orm::Error&gt;(())
+})?;</code></pre>
+  <ul>
+    <li><strong>Commit.</strong> The transaction commits when the closure returns <code>Ok</code>.</li>
+    <li><strong>Rollback on Err.</strong> When the closure returns <code>Err</code>, the transaction rolls back and the error is returned. A rollback that fails does not replace that error.</li>
+    <li><strong>Rollback on panic.</strong> The closure runs inside <code>catch_unwind</code>. If it panics, the transaction is rolled back on the database's runtime, and then the panic continues to the caller. The rollback runs before the unwind, because dropping the connection during an unwind needs a Tokio context.</li>
+  </ul>
+  <p>Nothing is committed on a panic, so writes made before it are not visible afterwards.</p>
+
+  <h2>Other calls</h2>
+  <ul>
+    <li><code>ping</code> checks that the database answers, and <code>close</code> closes the pool. Both block, and <code>close</code> returns a <code>Result</code>.</li>
+    <li><code>run(future)</code> blocks on any async future on the database's runtime. Use it for a <code>sqlx</code> query that Orbit does not wrap, such as <code>db.run(sqlx::query("...").execute(db.pool()))</code>. Its result is <code>Result&lt;Output, Error&gt;</code>, so the query's own result is inside it.</li>
+  </ul>
+@endsection

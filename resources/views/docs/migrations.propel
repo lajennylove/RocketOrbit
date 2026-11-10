@@ -1,0 +1,62 @@
+@extends('layouts.app')
+
+@section('title')Migrations@endsection
+@section('description')Orbit migrations: the folder layout and timestamp rule, running, checking the status and rolling back with Migrator, the migrations lock, embedding with the migrations macro, and importing a Diesel history.@endsection
+
+@section('content')
+  <h1>{{ $title }}</h1>
+  <p>A migration changes the schema. Orbit's migrations are folders of SQL. The migrator applies them, records each one in a <code>migrations</code> table with its batch number, and rolls back the last batch on request.</p>
+
+  <h2>Layout</h2>
+  <p>Each migration is a folder named <code>&lt;timestamp&gt;_&lt;name&gt;</code>, with an <code>up.sql</code> that applies it and a <code>down.sql</code> that reverts it:</p>
+  <pre class="line-numbers"><code>migrations/
+  20261108000000_create_users/
+    up.sql
+    down.sql</code></pre>
+  <ul>
+    <li>The timestamp is 14 digits, <code>YYYYMMDDHHMMSS</code>, followed by an underscore and a name.</li>
+    <li>No two migrations may have the same name, or the same timestamp.</li>
+    <li>Migrations run in name order, which is timestamp order.</li>
+    <li>When reading a folder, Orbit skips hidden entries, whose names start with a dot.</li>
+  </ul>
+
+  <h2>Run, check and roll back</h2>
+  <p>Read the folder with <code>Migrator::from_dir</code>, then call the migrator with the database:</p>
+  <pre class="line-numbers"><code class="language-rust">use orbit_orm::{Database, Migrator};
+
+let db = Database::connect(&amp;url).await?;
+let migrator = Migrator::from_dir("migrations")?;
+
+migrator.run(&amp;db).await?;                  // applies every pending migration as one batch
+let status = migrator.status(&amp;db).await?;  // each migration as Applied (with its batch) or Pending
+migrator.rollback(&amp;db).await?;             // reverts the last batch, in reverse order</code></pre>
+  <ul>
+    <li><code>run</code> applies every pending migration, in name order, as one new batch. Each migration runs in its own transaction. The run stops at the first failure, which is returned as <code>MigrationFailed</code> with the migration's name. The migrations before it stay applied. It returns the names it applied.</li>
+    <li><code>status</code> lists each migration of this migrator as <code>State::Applied { batch }</code> or <code>State::Pending</code>. Applied migrations that have no folder here are not listed.</li>
+    <li><code>rollback</code> reverts the last batch. It runs each <code>down.sql</code> in reverse name order, each in its own transaction. Before it reverts anything, it checks that every migration in the batch has a folder here. It returns the names it reverted, or nothing when no migration has run.</li>
+  </ul>
+  <p>The <code>migrations</code> table is created the first time a migrator reads or changes it.</p>
+  <p>Orbit has no command-line tool. Call the migrator from your own code, for example from a binary you write.</p>
+
+  <h2>DDL is not rolled back</h2>
+  <p>MySQL does not roll back DDL, such as <code>CREATE TABLE</code>. A migration that fails can leave the DDL it ran before the failure in place. Only its data changes are rolled back.</p>
+
+  <h2>One process at a time</h2>
+  <p><code>run</code>, <code>rollback</code> and <code>import_diesel_history</code> hold a MySQL lock named <code>orbit_migrations</code> for the whole run. A second process waits up to 10 seconds. If the lock is still held, the call fails with <code>MigrationsLocked</code>. Change the wait with <code>with_lock_timeout</code>:</p>
+  <pre class="line-numbers"><code class="language-rust">use std::time::Duration;
+
+let migrator = Migrator::from_dir("migrations")?
+    .with_lock_timeout(Duration::from_secs(30));</code></pre>
+  <p><code>status</code> does not take the lock.</p>
+
+  <h2>Embedded migrations</h2>
+  <p>The <code>migrations!</code> macro embeds the files in the binary at build time. Its first argument is the folder, relative to the crate root. Then list the migration names by hand. A missing file is a build error. The macro returns <code>Result&lt;Migrator, Error&gt;</code>:</p>
+  <pre class="line-numbers"><code class="language-rust">let migrator = orbit_orm::migrations!("migrations", "20261108000000_create_users")?;</code></pre>
+  <p>A migrator can also be built from code, with <code>Migration::new(name, up, down)</code> and <code>Migrator::new(vec)</code>.</p>
+
+  <h2>Importing a Diesel history</h2>
+  <p>To move a project from Diesel, record the migrations that Diesel has already applied. <code>import_diesel_history</code> reads Diesel's <code>__diesel_schema_migrations</code> table and records each migration with a matching folder that is not yet recorded. It records them in one new batch, in name order. It runs no <code>up.sql</code>, and it does not change Diesel's table. A second call imports nothing. When Diesel's table does not exist, it returns nothing.</p>
+  <pre class="line-numbers"><code class="language-rust">let imported = migrator.import_diesel_history(&amp;db).await?;
+let unmatched = migrator.unmatched_diesel_versions(&amp;db).await?;</code></pre>
+  <p><code>unmatched_diesel_versions</code> lists the versions in Diesel's table that have no folder in this migrator, in order. The import leaves them out, so you decide what to do with them.</p>
+@endsection

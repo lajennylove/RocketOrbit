@@ -1,0 +1,13 @@
+@extends('layouts.app')
+
+@section('title')Not found@endsection
+
+@section('description')There is no Orbit docs page at this address. Start again from the introduction to Orbit, the ORM for Rocket.rs apps.@endsection
+@section('robots')noindex,follow@endsection
+@section('og_type')website@endsection
+@section('structured_data')@endsection
+
+@section('content')
+  <h1>Not found</h1>
+  <p>There is no page at this address. Try the <a href="/docs/introduction">introduction</a>.</p>
+@endsection

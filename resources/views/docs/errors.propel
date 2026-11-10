@@ -1,0 +1,49 @@
+@extends('layouts.app')
+
+@section('title')Errors@endsection
+@section('description')The Orbit Error enum: the typed database errors such as unique and foreign key violations, deadlocks and lock wait timeouts, and the errors for queries, identifiers and migrations.@endsection
+
+@section('content')
+  <h1>{{ $title }}</h1>
+  <p>Every error from Orbit is one enum, <code>Error</code>. Some database errors have variants of their own, so a caller can match them. Any other database error is <code>Error::Database</code>, which holds the <code>sqlx</code> error.</p>
+  <pre class="line-numbers"><code class="language-rust">use orbit_orm::{Error, Model};
+
+match Post::query().insert(&amp;db, &amp;[("title", "Hello".into())]).await {
+    Ok(id) =&gt; println!("inserted {id}"),
+    Err(Error::UniqueViolation { index }) =&gt; println!("unique index {index:?} was violated"),
+    Err(Error::ForeignKeyViolation { constraint }) =&gt; println!("foreign key {constraint:?} was violated"),
+    Err(Error::Deadlock) | Err(Error::LockWaitTimeout) =&gt; println!("retry the transaction"),
+    Err(other) =&gt; return Err(other),
+}</code></pre>
+
+  <h2>Database errors</h2>
+  <ul>
+    <li><code>Database(sqlx::Error)</code>: the database rejected a connection, a query or a statement, and no other variant fits.</li>
+    <li><code>UniqueViolation { index }</code>: an insert or update broke a unique index or the primary key. <code>index</code> is the index name when the server reports it.</li>
+    <li><code>ForeignKeyViolation { constraint }</code>: a row refers to a missing parent, or a parent is still referenced. <code>constraint</code> is the foreign key name when the server reports it.</li>
+    <li><code>Deadlock</code>: the database rolled back the whole transaction to break a deadlock. Run it again.</li>
+    <li><code>LockWaitTimeout</code>: a lock was not released in time. Only the statement failed, and the transaction is still open.</li>
+  </ul>
+  <p>Orbit recognises the deadlock and lock wait cases by MySQL's error numbers, 1213 and 1205.</p>
+
+  <h2>Query errors</h2>
+  <ul>
+    <li><code>NotFound { table }</code>: <code>first_or_fail</code> or <code>find_or_fail</code> found no row.</li>
+    <li><code>NotFillable { table, column }</code>: <code>insert</code>, <code>replace</code> or <code>update</code> named a column that is not in the model's <code>FILLABLE</code> list.</li>
+    <li><code>InvalidIdentifier(name)</code>: a table or column name is empty or contains a backtick.</li>
+    <li><code>BlockingInRuntime</code>: a blocking call ran on a thread that runs async code. Call it inside <code>tokio::task::spawn_blocking</code>. See <a href="/docs/blocking">Blocking API</a>.</li>
+  </ul>
+
+  <h2>Migration errors</h2>
+  <ul>
+    <li><code>Read { path, source }</code>: a file could not be read, such as a migration's <code>up.sql</code>.</li>
+    <li><code>DuplicateMigration { name }</code>: two migrations have the same name.</li>
+    <li><code>InvalidMigrationName { name }</code>: a name does not start with a 14-digit timestamp and an underscore.</li>
+    <li><code>DuplicateTimestamp { first, second }</code>: two migrations share a timestamp, so their order is not defined.</li>
+    <li><code>MigrationsLocked { seconds }</code>: another process ran migrations and did not finish within the lock timeout.</li>
+    <li><code>MigrationFailed { name, source }</code>: a migration's <code>up.sql</code> failed. The run stopped there, and earlier migrations stay applied.</li>
+    <li><code>RollbackFailed { name, source }</code>: a migration's <code>down.sql</code> failed. The rollback stopped there.</li>
+    <li><code>UnknownMigration { name }</code>: a migration is recorded as applied, but this migrator has no files for it, so it cannot be rolled back.</li>
+  </ul>
+  <p>See <a href="/docs/migrations">Migrations</a> for how these errors arise.</p>
+@endsection

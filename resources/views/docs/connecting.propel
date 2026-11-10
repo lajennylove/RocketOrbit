@@ -1,0 +1,30 @@
+@extends('layouts.app')
+
+@section('title')Connecting@endsection
+@section('description')How to open an Orbit database with Database::connect, check it with ping, read the connection pool's limits, use the raw pool, and close it.@endsection
+
+@section('content')
+  <h1>{{ $title }}</h1>
+  <p>A <code>Database</code> is the connection pool for one database. Connect once, at startup, and share the value with the routes, for example in Rocket's managed state or behind an <code>Arc</code>. A <code>Database</code> is not <code>Clone</code>.</p>
+
+  <h2>Connect</h2>
+  <p>Pass the connection URL to <code>Database::connect</code>. It has the form <code>mysql://user:password@host/database</code>:</p>
+  <pre class="line-numbers"><code class="language-rust">use orbit_orm::Database;
+
+let db = Database::connect("mysql://user:password@127.0.0.1/app").await?;</code></pre>
+  <p>A URL that the server rejects, such as a wrong password, returns an <code>Error</code>. See <a href="/docs/errors">Errors</a>.</p>
+
+  <h2>Ping</h2>
+  <p><code>ping</code> runs <code>SELECT 1</code> and returns an error when the database does not answer. It is a simple way to check the connection at startup:</p>
+  <pre class="line-numbers"><code class="language-rust">db.ping().await?;</code></pre>
+
+  <h2>The pool</h2>
+  <p>The pool keeps up to 5 connections. A query that finds none free waits up to 10 seconds, then fails. These limits are fixed in this version, and there is no setting for them.</p>
+
+  <h2>The raw pool</h2>
+  <p><code>db.pool()</code> gives the <code>sqlx</code> <code>MySqlPool</code>, for queries that Orbit does not wrap yet. Inside a transaction, <code>tx.connection()</code> gives the transaction's connection. See <a href="/docs/transactions">Transactions</a>.</p>
+
+  <h2>Close</h2>
+  <p><code>close</code> closes every connection in the pool:</p>
+  <pre class="line-numbers"><code class="language-rust">db.close().await;</code></pre>
+@endsection

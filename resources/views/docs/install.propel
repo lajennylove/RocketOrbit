@@ -1,0 +1,35 @@
+@extends('layouts.app')
+
+@section('title')Installation@endsection
+@section('description')How to add Orbit to a Rocket.rs app from git, with its derive and blocking features, and the sqlx version a hand-written model needs.@endsection
+
+@section('content')
+  <h1>{{ $title }}</h1>
+  <p>Orbit is a Rust crate. It needs a Rust toolchain that supports edition 2024, which is Rust 1.85 or newer, and a MySQL or MariaDB server. Orbit is added from its git repository.</p>
+
+  <h2>Add the crate</h2>
+  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --git https://github.com/lajennylove/Orbit</code></pre>
+  <p>The same dependency in <code>Cargo.toml</code>:</p>
+  <pre class="line-numbers"><code class="language-toml">[dependencies]
+orbit-orm = { git = "https://github.com/lajennylove/Orbit" }</code></pre>
+  <p>The package is <code>orbit-orm</code>, and the Rust crate name is <code>orbit_orm</code>, so the code imports from <code>orbit_orm</code>.</p>
+
+  <h2>Features</h2>
+  <ul>
+    <li><code>derive</code>, on by default, adds the <code>OrbitModel</code> derive. See <a href="/docs/models">Models</a>. Without it, write the <code>Model</code> impls by hand.</li>
+    <li><code>blocking</code>, off by default, adds <code>orbit_orm::blocking</code>, the synchronous API. See <a href="/docs/blocking">Blocking API</a>.</li>
+  </ul>
+  <p>To turn on the blocking API:</p>
+  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --features blocking --git https://github.com/lajennylove/Orbit</code></pre>
+  <p>To leave out the derive, turn off the default features:</p>
+  <pre class="line-numbers"><code class="language-toml">[dependencies]
+orbit-orm = { git = "https://github.com/lajennylove/Orbit", default-features = false }</code></pre>
+
+  <h2>Async runtime</h2>
+  <p>The async API runs on Tokio. A Rocket app already runs on Tokio, so nothing more is needed. A plain binary needs a runtime, such as <code>#[tokio::main]</code>.</p>
+
+  <h2>Sqlx for hand-written models</h2>
+  <p>The derive needs no other crate. A hand-written model implements <code>sqlx</code>'s <code>FromRow</code>, so the app needs <code>sqlx</code> too. Use the version Orbit uses, which is <code>0.9.0</code>, so that both use one copy of it:</p>
+  <pre class="line-numbers"><code class="language-toml">sqlx = { version = "0.9.0", default-features = false, features = ["mysql"] }</code></pre>
+  <p>See <a href="/docs/models">Models</a> for the hand-written form.</p>
+@endsection

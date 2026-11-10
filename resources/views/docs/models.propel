@@ -1,0 +1,94 @@
+@extends('layouts.app')
+
+@section('title')Models@endsection
+@section('description')How a model maps a table to a Rust struct: the OrbitModel derive, its table, primary_key, column, fillable and skip attributes, the default table name, and the hand-written Model trait.@endsection
+
+@section('content')
+  <h1>{{ $title }}</h1>
+  <p>A model maps one table to a Rust type, and names the columns that <code>insert</code> and <code>update</code> may write. The <code>OrbitModel</code> derive writes the row mapping and the model from attributes:</p>
+  <pre class="line-numbers"><code class="language-rust">use orbit_orm::{Model, OrbitModel};
+
+#[derive(OrbitModel)]
+#[orbit(table = "posts")]
+struct Post {
+    id: i64,
+    #[orbit(fillable)]
+    title: String,
+    #[orbit(column = "view_count", fillable)]
+    views: Option&lt;i64&gt;,
+}</code></pre>
+  <p>The derive works on a struct with named fields. It does not support generic structs, tuple structs or enums. The field types must be types that <code>sqlx</code> can read from MySQL, such as <code>i64</code>, <code>String</code>, <code>bool</code> and <code>Option</code> of those.</p>
+  <p>Import <code>Model</code> as well, as the example does. It provides <code>Post::query()</code>, and the derive does not add it to the scope.</p>
+
+  <h2>Attributes</h2>
+  <p>Attributes go in <code>#[orbit(...)]</code>. A struct takes these keys:</p>
+  <ul>
+    <li><code>table = "..."</code> sets the table name. The name must not be empty. See <a href="#table-names">Table names</a>.</li>
+    <li><code>primary_key = "..."</code> sets the primary key column. The default is <code>id</code>. It must be the column of a field that is not skipped, or the derive fails to compile.</li>
+  </ul>
+  <p>A field takes these keys:</p>
+  <ul>
+    <li><code>column = "..."</code> sets the column name, when it differs from the field name.</li>
+    <li><code>fillable</code> adds the column to the list that <code>insert</code> and <code>update</code> may write. By default no column is fillable.</li>
+    <li><code>skip</code> leaves the field out of the row. The field is set to its <code>Default</code> value when a row is read. A skipped field cannot have <code>column</code> or <code>fillable</code>.</li>
+  </ul>
+  <p>An unknown key is a compile error.</p>
+
+  <h2 id="table-names">Table names</h2>
+  <p>Without <code>table</code>, the table name is the struct name in snake case, with its last word made plural, as in Laravel's Eloquent:</p>
+  <ul>
+    <li><code>Flight</code> uses <code>flights</code>.</li>
+    <li><code>UserProfile</code> uses <code>user_profiles</code>. Only the last word, <code>Profile</code>, is pluralized.</li>
+    <li><code>Category</code> uses <code>categories</code>.</li>
+    <li><code>Person</code> uses <code>people</code>.</li>
+  </ul>
+  <p>The plural follows the English rules that Laravel's <code>Pluralizer</code> uses, including its irregular and uncountable words. These rules cover ASCII letters only. A word that matches no rule gets a plain <code>s</code>. When the name differs from the table, set <code>table</code>: an explicit name is used as written.</p>
+
+  <h2>The primary key</h2>
+  <p>The primary key is <code>id</code> unless <code>primary_key</code> says otherwise. <code>find</code> and <code>find_or_fail</code> search by it, and <code>first</code> does not use it for ordering. A table with a text key:</p>
+  <pre class="line-numbers"><code class="language-rust">#[derive(OrbitModel)]
+#[orbit(table = "tags", primary_key = "slug")]
+struct Tag {
+    #[orbit(fillable)]
+    slug: String,
+    #[orbit(fillable)]
+    label: String,
+}</code></pre>
+
+  <h2>A hand-written model</h2>
+  <p>Without the derive, write the two impls yourself. Rows are read with <code>sqlx</code>'s <code>FromRow</code>, and <code>Model</code> gives the table, the primary key and the fillable columns. This is the same model as the first example:</p>
+  <pre class="line-numbers"><code class="language-rust">use orbit_orm::Model;
+use sqlx::mysql::MySqlRow;
+use sqlx::{FromRow, Row};
+
+struct Post {
+    id: i64,
+    title: String,
+    views: i64,
+}
+
+impl&lt;'r&gt; FromRow&lt;'r, MySqlRow&gt; for Post {
+    fn from_row(row: &amp;'r MySqlRow) -&gt; Result&lt;Self, sqlx::Error&gt; {
+        Ok(Self {
+            id: row.try_get("id")?,
+            title: row.try_get("title")?,
+            views: row.try_get("views")?,
+        })
+    }
+}
+
+impl Model for Post {
+    const TABLE: &amp;'static str = "posts";
+    const FILLABLE: &amp;'static [&amp;'static str] = &amp;["title", "views"];
+}</code></pre>
+  <p>The <code>Model</code> trait has three constants and one method:</p>
+  <ul>
+    <li><code>TABLE</code>, the table name. It has no default, so it must be set.</li>
+    <li><code>PRIMARY_KEY</code>, the primary key column. The default is <code>"id"</code>.</li>
+    <li><code>FILLABLE</code>, the columns that <code>insert</code> and <code>update</code> may write. The default is an empty list.</li>
+    <li><code>query()</code>, which starts a query on the table. It is provided, so it needs no code.</li>
+  </ul>
+  <p>The hand-written model needs <code>sqlx</code> in the app. See <a href="/docs/install">Installation</a>.</p>
+
+  <p>Next, see <a href="/docs/queries">Queries</a> for the methods a model's <code>query()</code> returns.</p>
+@endsection

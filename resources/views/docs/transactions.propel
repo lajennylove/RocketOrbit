@@ -1,0 +1,61 @@
+@extends('layouts.app')
+
+@section('title')Transactions@endsection
+@section('description')How Database::transaction commits and rolls back, how queries join a transaction, how a unique violation is reported with its index name, and how deadlocks are handled.@endsection
+
+@section('content')
+  <h1>{{ $title }}</h1>
+  <p><code>Database::transaction</code> runs a closure in a transaction. It takes an async closure, which receives the transaction as <code>tx</code>. The closure returns a <code>Result</code>, and the transaction ends with it:</p>
+  <pre class="line-numbers"><code class="language-rust">use orbit_orm::{Database, Error, Model};
+
+let id = db
+    .transaction(async |tx| {
+        let id = Post::query()
+            .insert(&amp;mut *tx, &amp;[("title", "Hello".into())])
+            .await?;
+        Post::query()
+            .where_eq("id", id)
+            .for_update()
+            .first_or_fail(&amp;mut *tx)
+            .await?;
+        Ok::<_, Error>(id)
+    })
+    .await?;</code></pre>
+
+  <h2>Queries in the transaction</h2>
+  <p>A query that must run inside the transaction takes it as <code>&amp;mut *tx</code>. A query given <code>&amp;db</code> runs on the pool, outside the transaction. <code>tx.connection()</code> gives the transaction's connection, for SQL that Orbit does not wrap.</p>
+
+  <h2>Commit and rollback</h2>
+  <ul>
+    <li>When the closure returns <code>Ok</code>, the transaction commits, and the value is returned.</li>
+    <li>When the closure returns <code>Err</code>, the transaction rolls back, and that error is returned. A rollback that fails does not replace the error.</li>
+    <li>When the closure panics, nothing is committed. The commit runs only after the closure returns, so the transaction is rolled back.</li>
+  </ul>
+
+  <h2>Errors in the closure</h2>
+  <p>The closure's error type must implement <code>From&lt;Error&gt;</code>, so Orbit's errors convert with <code>?</code>. <code>Error</code> itself is the simplest choice. A unique violation is reported with the name of the index that broke. The name is <code>None</code> when the server does not report it:</p>
+  <pre class="line-numbers"><code class="language-rust">use orbit_orm::{Database, Error, Model};
+
+match db
+    .transaction(async |tx| {
+        let id = Post::query()
+            .insert(&amp;mut *tx, &amp;[("title", "Hello".into())])
+            .await?;
+        Ok::<_, Error>(id)
+    })
+    .await
+{
+    Ok(id) =&gt; println!("inserted {id}"),
+    Err(Error::UniqueViolation { index }) =&gt; {
+        println!("unique index {index:?} was violated")
+    }
+    Err(other) =&gt; return Err(other),
+}</code></pre>
+  <p>The index name comes from the server's message. MySQL 8.0.19 and later prefix the table name, and Orbit removes that prefix. For a unique index called <code>posts_title_unique</code>, the index is <code>Some("posts_title_unique")</code>. See <a href="/docs/errors">Errors</a> for the other variants.</p>
+
+  <h2>Deadlocks</h2>
+  <p>Orbit does not retry a transaction. When the database rolls the transaction back to break a deadlock, the call returns <code>Error::Deadlock</code>, and the caller decides whether to run the transaction again.</p>
+
+  <h2>Row locks</h2>
+  <p>Inside a transaction, <code>for_update</code> holds its lock until the transaction ends. Outside one, the lock lasts only for the statement. See <a href="/docs/queries">Queries</a>.</p>
+@endsection

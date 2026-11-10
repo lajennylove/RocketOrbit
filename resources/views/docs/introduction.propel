@@ -1,0 +1,26 @@
+@extends('layouts.app')
+
+@section('title')Introduction@endsection
+@section('description')Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, with a query builder, transactions, migrations and a blocking API.@endsection
+
+@section('content')
+  <h1>{{ $title }}</h1>
+  <p>Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, and runs queries, transactions and migrations against them. Its names follow Laravel's Eloquent and query builder, so most of it will be familiar to a Laravel developer. <a href="/docs/differences">Differences from Laravel</a> lists where Orbit departs from Laravel.</p>
+
+  <h2>What Orbit covers</h2>
+  <ul>
+    <li><a href="/docs/connecting">Connecting</a> opens a connection pool and checks that the database answers.</li>
+    <li><a href="/docs/models">Models</a> map a table to a struct. The <code>OrbitModel</code> derive writes the mapping.</li>
+    <li><a href="/docs/queries">Queries</a> build <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code> and <code>REPLACE</code> statements. Values are always sent as bound parameters.</li>
+    <li><a href="/docs/transactions">Transactions</a> commit when a closure returns <code>Ok</code> and roll back when it returns <code>Err</code> or panics.</li>
+    <li><a href="/docs/errors">Errors</a> lists the typed errors, such as unique and foreign key violations, deadlocks and lock wait timeouts.</li>
+    <li><a href="/docs/migrations">Migrations</a> apply and revert folders of SQL, and can import the history of a Diesel project.</li>
+    <li><a href="/docs/blocking">Blocking API</a> is a synchronous version of the same queries, behind the <code>blocking</code> feature.</li>
+  </ul>
+
+  <h2>Databases</h2>
+  <p>Orbit works with MySQL and MariaDB. It does not support other databases yet.</p>
+
+  <h2>Where to start</h2>
+  <p>Add the crate with the steps in <a href="/docs/install">Installation</a>, then connect as shown in <a href="/docs/connecting">Connecting</a>.</p>
+@endsection

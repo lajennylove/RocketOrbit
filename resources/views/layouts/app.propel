@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title') · Orbit</title>
+    <meta name="description" content="@yield('description', 'Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, with a query builder, transactions and migrations.')">
+    <meta name="robots" content="@yield('robots', 'index,follow')">
+    <link rel="canonical" href="{{ $canonical }}">
+    <meta name="theme-color" content="#3d50f5">
+    <meta property="og:site_name" content="Orbit">
+    <meta property="og:type" content="@yield('og_type', 'article')">
+    <meta property="og:title" content="@yield('title') · Orbit">
+    <meta property="og:description" content="@yield('description', 'Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, with a query builder, transactions and migrations.')">
+    <meta property="og:url" content="{{ $canonical }}">
+    <meta property="og:locale" content="en_US">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="@yield('title') · Orbit">
+    <meta name="twitter:description" content="@yield('description', 'Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, with a query builder, transactions and migrations.')">
+    @sectionMissing('structured_data')
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"@yield('title')","url":"{{ $canonical }}","description":"@yield('description', 'Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, with a query builder, transactions and migrations.')"}</script>
+    @endif
+    @yield('structured_data')
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+  </head>
+  <body>
+    <header class="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-hairline bg-header px-6">
+      <label for="menu-toggle" class="cursor-pointer text-text md:hidden" aria-label="Toggle menu">
+        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M3 6h18M3 12h18M3 18h18"/>
+        </svg>
+      </label>
+      <!-- The RocketBoost Orbit logo is placed here once the logo file is added. -->
+      <a href="/" class="flex items-center gap-2 font-bold text-heading no-underline hover:no-underline">
+        Orbit
+      </a>
+      <span class="hidden truncate text-[15px] text-text md:inline">ORM for Rocket.rs</span>
+      <a href="https://rocketboost.rs" class="ml-auto shrink-0 text-[15px] text-link">rocketboost.rs</a>
+    </header>
+
+    <div class="mx-auto flex max-w-[1280px] flex-col md:flex-row">
+      <!-- The menu toggle. The label in the header controls it, and the sidebar
+           follows it with peer-checked, so no JavaScript is needed. -->
+      <input id="menu-toggle" type="checkbox" class="peer hidden">
+
+      <aside class="fixed inset-x-0 top-14 bottom-0 z-20 hidden overflow-y-auto border-hairline bg-white p-4 peer-checked:block md:sticky md:top-14 md:z-auto md:block md:h-[calc(100vh-3.5rem)] md:w-[300px] md:shrink-0 md:overflow-y-auto md:border-r md:bg-transparent md:p-6">
+        <nav>
+          @foreach (group in nav)
+            <p class="sidebar-heading">{{ $group.heading }}</p>
+            @foreach (link in group.links)
+              <a class="sidebar-link" href="{{ $link.href }}">{{ $link.label }}</a>
+            @endforeach
+          @endforeach
+        </nav>
+      </aside>
+
+      <main class="min-w-0 flex-1 px-6 py-10 md:px-12">
+        <div class="docs-content">
+          @yield('content')
+        </div>
+
+        <!-- Previous and next pages, in sidebar order. -->
+        <nav class="docs-content mt-16 flex justify-between gap-4 border-t border-hairline pt-6" aria-label="Pages">
+          @if ($pager.prev)
+            <a href="{{ $pager.prev.href }}" class="group flex flex-col no-underline hover:no-underline">
+              <span class="text-sm text-text">Previous</span>
+              <span class="font-semibold text-accent group-hover:underline">{{ $pager.prev.label }}</span>
+            </a>
+          @endif
+          @if ($pager.next)
+            <a href="{{ $pager.next.href }}" class="group ml-auto flex flex-col text-right no-underline hover:no-underline">
+              <span class="text-sm text-text">Next</span>
+              <span class="font-semibold text-accent group-hover:underline">{{ $pager.next.label }}</span>
+            </a>
+          @endif
+        </nav>
+      </main>
+    </div>
+    <script data-goatcounter="https://rocketboost-orbit.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+  </body>
+</html>

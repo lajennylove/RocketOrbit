@@ -1,0 +1,86 @@
+@extends('layouts.app')
+
+@section('title')Queries@endsection
+@section('description')The Orbit query builder: where, or_where, grouped conditions, order_by, select, limit, offset, the terminal methods get, first, find, count and exists, the writes insert, replace, update and delete, and for_update.@endsection
+
+@section('content')
+  <h1>{{ $title }}</h1>
+  <p>A query starts with <code>Model::query()</code>, or with <code>Query::table()</code> when you have no model. Builder methods return the query, and a terminal method runs it. A terminal method takes the database, as <code>&amp;db</code>, or a transaction, as <code>&amp;mut *tx</code>:</p>
+  <pre class="line-numbers"><code class="language-rust">use orbit_orm::{Database, Direction, Model, Operator, Query};
+
+let db = Database::connect("mysql://user:password@127.0.0.1/app").await?;
+
+let popular = Post::query()
+    .where_op("views", Operator::Ge, 100)
+    .order_by("views", Direction::Desc)
+    .limit(10)
+    .get(&amp;db)
+    .await?;</code></pre>
+
+  <h2>Filters</h2>
+  <p>Each filter has an <code>or_</code> form that joins it with <code>OR</code>. A filter without the prefix joins with <code>AND</code>.</p>
+  <ul>
+    <li><code>where_eq(column, value)</code> and <code>or_where_eq</code> compare for equality.</li>
+    <li><code>where_op(column, operator, value)</code> and <code>or_where_op</code> take an <code>Operator</code>: <code>Lt</code>, <code>Le</code>, <code>Gt</code>, <code>Ge</code>, <code>Ne</code> or <code>Like</code>.</li>
+    <li><code>where_in(column, values)</code> and <code>or_where_in</code> match any of a list. An empty list matches no rows.</li>
+    <li><code>where_null(column)</code>, <code>where_not_null(column)</code> and their <code>or_</code> forms check for <code>NULL</code>.</li>
+  </ul>
+  <p>A <code>None</code> value follows Laravel. <code>where_eq(column, None)</code> is <code>IS NULL</code>, and <code>where_op</code> with <code>Operator::Ne</code> and <code>None</code> is <code>IS NOT NULL</code>. Any other operator with <code>None</code> matches no rows.</p>
+
+  <h2>Grouped conditions</h2>
+  <p><code>where_group</code> and <code>or_where_group</code> put their conditions in parentheses. The closure receives an empty query and adds its conditions to it:</p>
+  <pre class="line-numbers"><code class="language-rust">let posts = Post::query()
+    .where_op("views", Operator::Ge, 100)
+    .where_group(|q| q.where_eq("title", "Hello").or_where_eq("title", "Hi"))
+    .get(&amp;db)
+    .await?;</code></pre>
+  <p>Only the conditions are kept from the group. <code>order_by</code>, <code>limit</code> and the other settings inside it are ignored. An empty group adds nothing.</p>
+
+  <h2>Order, columns and paging</h2>
+  <ul>
+    <li><code>order_by(column, Direction::Asc)</code> or <code>Direction::Desc</code> sorts the rows. Later calls sort within the earlier ones.</li>
+    <li><code>select(&amp;[columns])</code> chooses the columns that <code>get</code>, <code>first</code> and the methods built on them return. Without it, every column is selected.</li>
+    <li><code>limit(n)</code> returns at most <code>n</code> rows, and <code>offset(n)</code> skips the first <code>n</code>. An offset without a limit is allowed.</li>
+  </ul>
+
+  <h2>Reading rows</h2>
+  <ul>
+    <li><code>get(db)</code> returns every matching row, as a <code>Vec</code>.</li>
+    <li><code>first(db)</code> returns the first row, or <code>None</code>. It has no default order, so call <code>order_by</code> when the row matters.</li>
+    <li><code>first_or_fail(db)</code> is <code>first</code>, and returns <code>Error::NotFound</code> when no row matches.</li>
+    <li><code>find(db, id)</code> returns the row whose primary key is <code>id</code>, or <code>None</code>.</li>
+    <li><code>find_or_fail(db, id)</code> is <code>find</code>, and returns <code>Error::NotFound</code> when no row matches.</li>
+    <li><code>count(db)</code> returns the number of matching rows, as an <code>i64</code>.</li>
+    <li><code>exists(db)</code> returns whether any row matches.</li>
+  </ul>
+  <pre class="line-numbers"><code class="language-rust">let post = Post::query().find_or_fail(&amp;db, 1).await?;
+let newest = Post::query().order_by("id", Direction::Desc).first(&amp;db).await?;</code></pre>
+
+  <h2>Writing rows</h2>
+  <p>The writes take the columns and their values as pairs. Each column must be in the model's <code>FILLABLE</code> list, or the write returns <code>Error::NotFillable</code>.</p>
+  <ul>
+    <li><code>insert(db, values)</code> inserts one row and returns its auto-increment id, as a <code>u64</code>.</li>
+    <li><code>replace(db, values)</code> runs MySQL's <code>REPLACE INTO</code>. It deletes the row that has the same unique or primary key, then inserts the new one, and returns the rows affected. Because the old row is deleted, its id changes, and columns that are not in <code>values</code> take their defaults. This is not Laravel's <code>upsert</code>.</li>
+    <li><code>update(db, values)</code> sets the columns on every matching row, and returns the number of rows changed. An empty list of values changes nothing and returns <code>0</code>. Order and limit are ignored.</li>
+    <li><code>delete(db)</code> deletes every matching row, and returns the number deleted. Order and limit are ignored.</li>
+  </ul>
+  <p>A query with no conditions applies <code>update</code> and <code>delete</code> to every row of the table.</p>
+  <pre class="line-numbers"><code class="language-rust">let id = Query::&lt;Post&gt;::table()
+    .insert(&amp;db, &amp;[("title", "Hello".into())])
+    .await?;
+
+let affected = Query::&lt;Post&gt;::table()
+    .replace(&amp;db, &amp;[("title", "Hello".into())])
+    .await?;</code></pre>
+
+  <h2>Values and names</h2>
+  <p>Every value is sent as a bound parameter, never as SQL text. Table and column names are quoted with backticks. A name that is empty or contains a backtick is an error, <code>Error::InvalidIdentifier</code>.</p>
+
+  <h2>Row locks</h2>
+  <p><code>for_update()</code> adds <code>FOR UPDATE</code> to <code>get</code>, <code>first</code>, <code>find</code>, <code>count</code> and <code>exists</code>. Inside a transaction, the lock lasts until the transaction ends. Outside one, the statement runs in autocommit and the lock lasts only for that statement. See <a href="/docs/transactions">Transactions</a>.</p>
+  <pre class="line-numbers"><code class="language-rust">let post = Post::query()
+    .where_eq("id", 1)
+    .for_update()
+    .first_or_fail(&amp;mut *tx)
+    .await?;</code></pre>
+@endsection
