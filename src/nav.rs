@@ -6,6 +6,9 @@ use serde::Serialize;
 
 use crate::SITE_URL;
 
+/// The social preview image, served from the build folder.
+const OG_IMAGE: &str = "/build/resources/images/og-image.jpg";
+
 /// A link is true when it exists, so `@if ($pager.prev)` reads an `Option<Link>`.
 #[derive(Debug, Clone, Serialize, propel_macros::Truthy)]
 pub struct Link {
@@ -95,6 +98,8 @@ pub struct DocPage {
     pub pager: Pager,
     /// The page's absolute address, for the canonical and Open Graph URLs.
     pub canonical: String,
+    /// The absolute address of the social preview image.
+    pub og_image: String,
 }
 
 impl DocPage {
@@ -124,6 +129,7 @@ impl DocPage {
             nav,
             pager,
             canonical,
+            og_image: format!("{SITE_URL}{OG_IMAGE}"),
         }
     }
 }
