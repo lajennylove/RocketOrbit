@@ -22,7 +22,7 @@ match Post::query().insert(&amp;db, &amp;[("title", "Hello".into())]).await {
     <li><code>UniqueViolation { index }</code>: an insert or update broke a unique index or the primary key. <code>index</code> is the index name when the server reports it.</li>
     <li><code>ForeignKeyViolation { constraint }</code>: a row refers to a missing parent, or a parent is still referenced. <code>constraint</code> is the foreign key name when the server reports it.</li>
     <li><code>Deadlock</code>: the database rolled back the whole transaction to break a deadlock. Run it again.</li>
-    <li><code>LockWaitTimeout</code>: a lock was not released in time. Only the statement failed, and the transaction is still open.</li>
+    <li><code>LockWaitTimeout</code>: a lock was not released in time. What happens to the transaction depends on the database. On MySQL only the statement is rolled back, and the transaction stays open, so the caller can carry on or roll it back. On PostgreSQL the whole transaction is aborted: every later statement fails until it ends, so it must be rolled back.</li>
   </ul>
   <p>Orbit recognises the deadlock and lock wait cases by MySQL's error numbers, 1213 and 1205, and by PostgreSQL's SQLSTATE codes, 40P01 and 55P03. SQLite raises neither, so on SQLite a lock wait that runs past the busy timeout is an <code>Error::Database</code>.</p>
 
@@ -32,6 +32,12 @@ match Post::query().insert(&amp;db, &amp;[("title", "Hello".into())]).await {
     <li><code>NotFillable { table, column }</code>: <code>insert</code>, <code>replace</code> or <code>update</code> named a column that is not in the model's <code>FILLABLE</code> list.</li>
     <li><code>InvalidIdentifier(name)</code>: a table or column name is empty or contains a backtick or a double quote.</li>
     <li><code>BlockingInRuntime</code>: a blocking call ran on a thread that runs async code. Call it inside <code>tokio::task::spawn_blocking</code>. See <a href="/docs/blocking">Blocking API</a>.</li>
+  </ul>
+
+  <h2>Connection and support errors</h2>
+  <ul>
+    <li><code>UnsupportedDriver { scheme }</code>: the URL's scheme names a database whose Cargo feature is not enabled in this build, or names no database. <code>scheme</code> is the part before the first <code>:</code>, never the password. See <a href="/docs/connecting">Connecting</a>.</li>
+    <li><code>Unsupported { operation, driver }</code>: the database has no equivalent for the operation. <code>operation</code> names it, and <code>driver</code> names the database. For example, <code>replace</code> on PostgreSQL returns <code>operation: "replace"</code>, <code>driver: "PostgreSQL"</code>.</li>
   </ul>
 
   <h2>Migration errors</h2>
