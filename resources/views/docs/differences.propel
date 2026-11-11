@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
 @section('title')Differences from Laravel@endsection
-@section('description')Where Orbit departs from Laravel's Eloquent and query builder: first without a default order, fillable checks, insert's returned id, NULL comparisons, replace, transactions, errors and table names.@endsection
+@section('description')Where Orbit departs from Laravel's Eloquent and query builder: first without a default order, fillable checks, insert's returned id, NULL comparisons, replace, transactions, errors, the blocking API, for_update outside a transaction, and table names.@endsection
 
 @section('content')
   <h1>{{ $title }}</h1>
   <p>Orbit follows Laravel's Eloquent and query builder, with these exceptions. Each one is listed here so it is not a surprise to someone who knows Laravel.</p>
   <ul>
-    <li><strong><code>first()</code> has no default order.</strong> As in Laravel, <code>first()</code> takes the first row the database returns. Call <code>order_by</code> when the row matters. Laravel's <code>sole</code>, <code>chunk</code> and <code>lazy</code> enforce an order; Orbit does not add one.</li>
+    <li><strong><code>first()</code> has no default order.</strong> As in Laravel, <code>first()</code> takes the first row the database returns. Call <code>order_by</code> when the row matters. Laravel's <code>chunk</code> and <code>lazy</code> add an order by the primary key when a query has none; Orbit has neither method.</li>
     <li><strong>Columns outside <code>FILLABLE</code> are an error.</strong> <code>insert</code> and <code>update</code> return <code>Error::NotFillable</code> for a column that is not in the model's <code>FILLABLE</code> list. Laravel's <code>Model::create</code> drops such an attribute without a message, so a misspelt column is ignored. Orbit stops instead, so the mistake shows up at once. Laravel's query builder does not check <code>$fillable</code> at all; Orbit checks it on every write.</li>
     <li><strong><code>insert</code> returns the id.</strong> It returns the auto-increment id as <code>u64</code>. Laravel's query builder <code>insert</code> returns a boolean, and <code>insertGetId</code> returns the id.</li>
     <li><strong><code>where_eq(column, None)</code> is <code>IS NULL</code></strong>, and <code>Operator::Ne</code> with <code>None</code> is <code>IS NOT NULL</code>, as in Laravel. Other operators with <code>None</code> match nothing, where Laravel throws.</li>
