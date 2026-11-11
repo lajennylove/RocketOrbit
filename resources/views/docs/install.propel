@@ -5,7 +5,7 @@
 
 @section('content')
   <h1>{{ $title }}</h1>
-  <p>Orbit is a Rust crate. It needs a Rust toolchain that supports edition 2024, which is Rust 1.85 or newer, and a server for MySQL, MariaDB, PostgreSQL or SQLite. Orbit is published on <a href="https://crates.io/crates/orbit-orm">crates.io</a> as <code>orbit-orm</code>.</p>
+  <p>Orbit is a Rust crate. It needs Rust 1.94.0 or newer, the minimum of its <code>sqlx</code> 0.9.0 dependency (the crate itself uses edition 2024, which needs 1.85), and a server for MySQL, MariaDB, PostgreSQL or SQLite. Orbit is published on <a href="https://crates.io/crates/orbit-orm">crates.io</a> as <code>orbit-orm</code>.</p>
 
   <h2>Add the crate</h2>
   <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm</code></pre>
@@ -28,8 +28,7 @@ orbit-orm = "0.1.0"</code></pre>
   <p>To use SQLite instead of MySQL:</p>
   <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --no-default-features --features sqlite,derive</code></pre>
   <p>To leave out the derive, turn off the default features and keep <code>mysql</code>:</p>
-  <pre class="line-numbers"><code class="language-toml">[dependencies]
-orbit-orm = { version = "0.1.0", default-features = false, features = ["mysql"] }</code></pre>
+  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --no-default-features --features mysql</code></pre>
 
   <h2>Async runtime</h2>
   <p>The async API runs on Tokio. A Rocket app already runs on Tokio, so nothing more is needed. A plain binary needs a runtime, such as <code>#[tokio::main]</code>.</p>
