@@ -55,7 +55,7 @@ let migrator = Migrator::from_dir("migrations")?
   <p>A migrator can also be built from code, with <code>Migration::new(name, up, down)</code> and <code>Migrator::new(vec)</code>.</p>
 
   <h2>Importing a Diesel history</h2>
-  <p>Orbit uses Diesel's <code>__diesel_schema_migrations</code> table, so a database that Diesel migrated already has its history, recorded in batch 0. Nothing needs to be imported. <code>run</code>, <code>status</code> and <code>rollback</code> add the <code>batch</code> column to that table the first time they use it. <code>import_diesel_history</code> is deprecated and now only creates the table if it is missing; it returns an empty list.</p>
+  <p>Orbit uses Diesel's <code>__diesel_schema_migrations</code> table, so a database that Diesel migrated already has its history, recorded in batch 0. Nothing needs to be imported. <code>run</code>, <code>status</code> and <code>rollback</code> add the <code>batch</code> column to that table the first time they use it. <code>import_diesel_history</code> is deprecated. It creates the migrations table if it is missing, adds the <code>batch</code> column if the table lacks it, and returns an empty list. It records no rows and runs no <code>up.sql</code>.</p>
   <pre class="line-numbers"><code class="language-rust">let unmatched = migrator.unmatched_diesel_versions(&amp;db).await?;</code></pre>
   <p><code>unmatched_diesel_versions</code> lists the versions in Diesel's table that have no folder in this migrator, in order. It only reads the table. You decide what to do with them.</p>
 @endsection
