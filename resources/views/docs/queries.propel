@@ -60,7 +60,7 @@ let newest = Post::query().order_by("id", Direction::Desc).first(&amp;db).await?
   <p>The writes take the columns and their values as pairs. Each column must be in the model's <code>FILLABLE</code> list, or the write returns <code>Error::NotFillable</code>.</p>
   <ul>
     <li><code>insert(db, values)</code> inserts one row and returns its auto-increment id, as a <code>u64</code>.</li>
-    <li><code>replace(db, values)</code> runs MySQL's <code>REPLACE INTO</code>. It deletes the row that has the same unique or primary key, then inserts the new one, and returns the rows affected. Because the old row is deleted, its id changes, and columns that are not in <code>values</code> take their defaults. This is not Laravel's <code>upsert</code>.</li>
+    <li><code>replace(db, values)</code> runs <code>REPLACE INTO</code> on MySQL and SQLite. PostgreSQL has no <code>REPLACE</code>, so it returns <code>Error::Unsupported</code>. It deletes the row that has the same unique or primary key, then inserts the new one, and returns the rows affected. Because the old row is deleted, its id changes, and columns that are not in <code>values</code> take their defaults. This is not Laravel's <code>upsert</code>.</li>
     <li><code>update(db, values)</code> sets the columns on every matching row, and returns the number of rows changed. An empty list of values changes nothing and returns <code>0</code>. Order and limit are ignored.</li>
     <li><code>delete(db)</code> deletes every matching row, and returns the number deleted. Order and limit are ignored.</li>
   </ul>

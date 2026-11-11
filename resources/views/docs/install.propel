@@ -5,7 +5,7 @@
 
 @section('content')
   <h1>{{ $title }}</h1>
-  <p>Orbit is a Rust crate. It needs a Rust toolchain that supports edition 2024, which is Rust 1.85 or newer, and a MySQL or MariaDB server. Orbit is added from its git repository.</p>
+  <p>Orbit is a Rust crate. It needs a Rust toolchain that supports edition 2024, which is Rust 1.85 or newer, and a server for MySQL, MariaDB, PostgreSQL or SQLite. Orbit is added from its git repository.</p>
 
   <h2>Add the crate</h2>
   <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --git https://github.com/lajennylove/Orbit</code></pre>
@@ -18,12 +18,16 @@ orbit-orm = { git = "https://github.com/lajennylove/Orbit" }</code></pre>
   <ul>
     <li><code>derive</code>, on by default, adds the <code>OrbitModel</code> derive. See <a href="/docs/models">Models</a>. Without it, write the <code>Model</code> impls by hand.</li>
     <li><code>blocking</code>, off by default, adds <code>orbit_orm::blocking</code>, the synchronous API. See <a href="/docs/blocking">Blocking API</a>.</li>
+    <li><code>mysql</code>, on by default, adds MySQL and MariaDB.</li>
+    <li><code>postgres</code> adds PostgreSQL, and <code>sqlite</code> adds SQLite. Both are off by default.</li>
   </ul>
   <p>To turn on the blocking API:</p>
   <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --features blocking --git https://github.com/lajennylove/Orbit</code></pre>
-  <p>To leave out the derive, turn off the default features:</p>
+  <p>To add PostgreSQL and SQLite as well as MySQL:</p>
+  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --features postgres,sqlite --git https://github.com/lajennylove/Orbit</code></pre>
+  <p>To leave out the derive, turn off the default features and keep <code>mysql</code>:</p>
   <pre class="line-numbers"><code class="language-toml">[dependencies]
-orbit-orm = { git = "https://github.com/lajennylove/Orbit", default-features = false }</code></pre>
+orbit-orm = { git = "https://github.com/lajennylove/Orbit", default-features = false, features = ["mysql"] }</code></pre>
 
   <h2>Async runtime</h2>
   <p>The async API runs on Tokio. A Rocket app already runs on Tokio, so nothing more is needed. A plain binary needs a runtime, such as <code>#[tokio::main]</code>.</p>

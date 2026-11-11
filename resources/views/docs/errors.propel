@@ -24,13 +24,13 @@ match Post::query().insert(&amp;db, &amp;[("title", "Hello".into())]).await {
     <li><code>Deadlock</code>: the database rolled back the whole transaction to break a deadlock. Run it again.</li>
     <li><code>LockWaitTimeout</code>: a lock was not released in time. Only the statement failed, and the transaction is still open.</li>
   </ul>
-  <p>Orbit recognises the deadlock and lock wait cases by MySQL's error numbers, 1213 and 1205.</p>
+  <p>Orbit recognises the deadlock and lock wait cases by MySQL's error numbers, 1213 and 1205, and by PostgreSQL's SQLSTATE codes, 40P01 and 55P03. SQLite raises neither, so on SQLite a lock wait that runs past the busy timeout is an <code>Error::Database</code>.</p>
 
   <h2>Query errors</h2>
   <ul>
     <li><code>NotFound { table }</code>: <code>first_or_fail</code> or <code>find_or_fail</code> found no row.</li>
     <li><code>NotFillable { table, column }</code>: <code>insert</code>, <code>replace</code> or <code>update</code> named a column that is not in the model's <code>FILLABLE</code> list.</li>
-    <li><code>InvalidIdentifier(name)</code>: a table or column name is empty or contains a backtick.</li>
+    <li><code>InvalidIdentifier(name)</code>: a table or column name is empty or contains a backtick or a double quote.</li>
     <li><code>BlockingInRuntime</code>: a blocking call ran on a thread that runs async code. Call it inside <code>tokio::task::spawn_blocking</code>. See <a href="/docs/blocking">Blocking API</a>.</li>
   </ul>
 

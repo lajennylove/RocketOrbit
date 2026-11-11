@@ -17,7 +17,7 @@ struct Post {
     #[orbit(column = "view_count", fillable)]
     views: Option&lt;i64&gt;,
 }</code></pre>
-  <p>The derive works on a struct with named fields. It does not support generic structs, tuple structs or enums. The field types must be types that <code>sqlx</code> can read from MySQL, such as <code>i64</code>, <code>String</code>, <code>bool</code> and <code>Option</code> of those.</p>
+  <p>The derive works on a struct with named fields. It does not support generic structs, tuple structs or enums. The field types must be types that <code>sqlx</code> can read from each enabled database, such as <code>i64</code>, <code>String</code>, <code>bool</code> and <code>Option</code> of those. A <code>u64</code> field reads from MySQL only, so do not use one in a build that also enables PostgreSQL or SQLite.</p>
   <p>Import <code>Model</code> as well, as the example does. It provides <code>Post::query()</code>, and the derive does not add it to the scope.</p>
 
   <h2>Attributes</h2>

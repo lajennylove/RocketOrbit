@@ -1,12 +1,121 @@
 @extends('layouts.app')
 
 @section('title')Introduction@endsection
-@section('description')Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, with a query builder, transactions, migrations and a blocking API.@endsection
+@section('description')Orbit is an ORM for Rocket.rs apps. It maps MySQL, MariaDB, PostgreSQL and SQLite tables to Rust types, with a query builder, transactions, migrations and a blocking API.@endsection
 
 @section('content')
   <img src="{{ asset('resources/images/orbit-logo.webp') }}" alt="RocketBoost Orbit" class="mx-auto mb-8 block w-full max-w-[632px]" width="632" height="557" fetchpriority="high">
   <h1>{{ $title }}</h1>
-  <p>Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, and runs queries, transactions and migrations against them. Its names follow Laravel's Eloquent and query builder, so most of it will be familiar to a Laravel developer. <a href="/docs/differences">Differences from Laravel</a> lists where Orbit departs from Laravel.</p>
+  <p>Orbit is an ORM for Rocket.rs apps. It maps MySQL, MariaDB, PostgreSQL and SQLite tables to Rust types, and runs queries, transactions and migrations against them. Its names follow Laravel's Eloquent and query builder, so most of it will be familiar to a Laravel developer. <a href="/docs/differences">Differences from Laravel</a> lists where Orbit departs from Laravel.</p>
+
+  <h2>Databases</h2>
+  <p>Orbit supports MySQL, MariaDB, PostgreSQL and SQLite. The URL's scheme chooses the database: <code>mysql://</code> (or <code>mariadb://</code>), <code>postgres://</code> and <code>sqlite://</code>. MySQL is the default feature. PostgreSQL and SQLite are optional features, and <a href="/docs/install">Installation</a> shows how to turn them on.</p>
+  <div class="my-8 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
+    <a href="https://www.mysql.com" target="_new" rel="noopener" class="flex flex-col items-center gap-3 text-center no-underline hover:underline">
+      <span class="flex h-14 items-center justify-center"><img src="{{ asset('resources/images/db/mysql-167x86.png') }}" alt="MySQL logo" width="167" height="86" class="h-auto max-h-14 w-auto max-w-full"></span>
+      <span class="text-[15px] text-text">MySQL</span>
+    </a>
+    <a href="https://mariadb.org" target="_new" rel="noopener" class="flex flex-col items-center gap-3 text-center no-underline hover:underline">
+      <span class="flex h-14 items-center justify-center"><img src="{{ asset('resources/images/db/mariadb-logo.svg') }}" alt="MariaDB logo" width="921" height="231" class="h-auto max-h-14 w-auto max-w-full"></span>
+      <span class="text-[15px] text-text">MariaDB</span>
+    </a>
+    <a href="https://www.postgresql.org" target="_new" rel="noopener" class="flex flex-col items-center gap-3 text-center no-underline hover:underline">
+      <span class="flex h-14 items-center justify-center"><img src="{{ asset('resources/images/db/postgresql-elephant.png') }}" alt="PostgreSQL logo" width="540" height="557" class="h-auto max-h-14 w-auto max-w-full"></span>
+      <span class="text-[15px] text-text">PostgreSQL</span>
+    </a>
+    <a href="https://www.sqlite.org" target="_new" rel="noopener" class="flex flex-col items-center gap-3 text-center no-underline hover:underline">
+      <span class="flex h-14 items-center justify-center"><img src="{{ asset('resources/images/db/sqlite-banner.svg') }}" alt="SQLite logo" width="104" height="47" class="h-auto max-h-14 w-auto max-w-full"></span>
+      <span class="text-[15px] text-text">SQLite</span>
+    </a>
+  </div>
+
+  <h2>Notes on each database</h2>
+  <p>The API is the same on every database. These are the differences that affect how you use it.</p>
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[32rem] border-collapse text-[15px]">
+      <thead>
+        <tr>
+          <th scope="col" class="border-b border-hairline py-2 pr-4 text-left font-semibold text-heading">Topic</th>
+          <th scope="col" class="border-b border-hairline py-2 text-left font-semibold text-heading">What differs</th>
+        </tr>
+      </thead>
+      <tbody class="align-top">
+        <tr>
+          <th scope="row" class="border-b border-hairline py-2 pr-4 text-left font-semibold">Migrations table</th>
+          <td class="border-b border-hairline py-2">Every database records migrations in <code>__diesel_schema_migrations</code>, with the same columns. This is not Laravel's <code>migrations</code> table. The name is shared with Diesel, so a Diesel project keeps its history.</td>
+        </tr>
+        <tr>
+          <th scope="row" class="border-b border-hairline py-2 pr-4 text-left font-semibold"><code>replace</code></th>
+          <td class="border-b border-hairline py-2">MySQL and SQLite run <code>REPLACE INTO</code>. PostgreSQL has no <code>REPLACE</code>, so <code>replace</code> returns <code>Error::Unsupported</code> there.</td>
+        </tr>
+        <tr>
+          <th scope="row" class="border-b border-hairline py-2 pr-4 text-left font-semibold"><code>for_update</code></th>
+          <td class="border-b border-hairline py-2">On SQLite it adds no lock clause, so it does nothing. SQLite serialises writers itself.</td>
+        </tr>
+        <tr>
+          <th scope="row" class="border-b border-hairline py-2 pr-4 text-left font-semibold">Migrations lock</th>
+          <td class="border-b border-hairline py-2">MySQL uses a named lock and PostgreSQL an advisory lock, and both hold across processes. On SQLite the lock is held only inside one process. Run migrations from one process when the database is SQLite, for example from a deploy step.</td>
+        </tr>
+        <tr>
+          <th scope="row" class="border-b border-hairline py-2 pr-4 text-left font-semibold">Migration DDL</th>
+          <td class="border-b border-hairline py-2">When a migration fails, MySQL does not roll back its DDL, such as <code>CREATE TABLE</code>. PostgreSQL and SQLite roll it back.</td>
+        </tr>
+        <tr>
+          <th scope="row" class="border-b border-hairline py-2 pr-4 text-left font-semibold">SQLite transactions</th>
+          <td class="border-b border-hairline py-2">Do not use the pool inside an open transaction on the same SQLite file. A transaction that reads can wait for a writer on another connection, while that writer waits for the read. Both fail after the 5-second busy timeout.</td>
+        </tr>
+        <tr>
+          <th scope="row" class="border-b border-hairline py-2 pr-4 text-left font-semibold"><code>u64</code> fields</th>
+          <td class="border-b border-hairline py-2">On PostgreSQL and SQLite, <code>u64</code> values are bound as <code>i64</code>, and a larger value is an error. A model with a <code>u64</code> field does not decode on those databases, so do not use one in a build that enables them.</td>
+        </tr>
+        <tr>
+          <th scope="row" class="border-b border-hairline py-2 pr-4 text-left font-semibold">PostgreSQL URL</th>
+          <td class="border-b border-hairline py-2">Name the user in the URL, and use TCP, as in <code>postgres://user@localhost/app</code>. Without a user, PostgreSQL connects as the role <code>anonymous</code>, which usually does not exist. A socket path in the <code>host=</code> query parameter works only when the URL has no host, with the user in the query too: <code>postgres:///app?host=/var/run/postgresql&amp;user=user</code>. The form <code>postgres://user@/app?host=/var/run/postgresql</code> fails with "empty host".</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Stored types</h2>
+  <p>These are the column types that Orbit's values are stored as on each database.</p>
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[32rem] border-collapse text-[15px]">
+      <thead>
+        <tr>
+          <th scope="col" class="border-b border-hairline py-2 pr-4 text-left font-semibold text-heading">Type</th>
+          <th scope="col" class="border-b border-hairline py-2 pr-4 text-left font-semibold text-heading">MySQL and MariaDB</th>
+          <th scope="col" class="border-b border-hairline py-2 pr-4 text-left font-semibold text-heading">PostgreSQL</th>
+          <th scope="col" class="border-b border-hairline py-2 text-left font-semibold text-heading">SQLite</th>
+        </tr>
+      </thead>
+      <tbody class="align-top">
+        <tr>
+          <th scope="row" class="border-b border-hairline py-2 pr-4 text-left font-semibold">Boolean</th>
+          <td class="border-b border-hairline py-2 pr-4"><code>TINYINT(1)</code></td>
+          <td class="border-b border-hairline py-2 pr-4"><code>BOOLEAN</code></td>
+          <td class="border-b border-hairline py-2"><code>INTEGER</code> (0 or 1)</td>
+        </tr>
+        <tr>
+          <th scope="row" class="border-b border-hairline py-2 pr-4 text-left font-semibold">Date and time</th>
+          <td class="border-b border-hairline py-2 pr-4"><code>DATETIME(6)</code></td>
+          <td class="border-b border-hairline py-2 pr-4"><code>TIMESTAMP(6)</code>, without a time zone</td>
+          <td class="border-b border-hairline py-2"><code>TEXT</code>, as <code>YYYY-MM-DD HH:MM:SS.ffffff</code></td>
+        </tr>
+        <tr>
+          <th scope="row" class="border-b border-hairline py-2 pr-4 text-left font-semibold">Date</th>
+          <td class="border-b border-hairline py-2 pr-4"><code>DATE</code></td>
+          <td class="border-b border-hairline py-2 pr-4"><code>DATE</code></td>
+          <td class="border-b border-hairline py-2"><code>TEXT</code>, as <code>YYYY-MM-DD</code></td>
+        </tr>
+        <tr>
+          <th scope="row" class="border-b border-hairline py-2 pr-4 text-left font-semibold">Bytes</th>
+          <td class="border-b border-hairline py-2 pr-4"><code>MEDIUMBLOB</code></td>
+          <td class="border-b border-hairline py-2 pr-4"><code>BYTEA</code></td>
+          <td class="border-b border-hairline py-2"><code>BLOB</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
   <h2>What Orbit covers</h2>
   <ul>
@@ -15,12 +124,9 @@
     <li><a href="/docs/queries">Queries</a> build <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code> and <code>REPLACE</code> statements. Values are always sent as bound parameters.</li>
     <li><a href="/docs/transactions">Transactions</a> commit when a closure returns <code>Ok</code> and roll back when it returns <code>Err</code> or panics.</li>
     <li><a href="/docs/errors">Errors</a> lists the typed errors, such as unique and foreign key violations, deadlocks and lock wait timeouts.</li>
-    <li><a href="/docs/migrations">Migrations</a> apply and revert folders of SQL, and can import the history of a Diesel project.</li>
+    <li><a href="/docs/migrations">Migrations</a> apply and revert folders of SQL, and keep Diesel's migrations table, so a Diesel project keeps its history.</li>
     <li><a href="/docs/blocking">Blocking API</a> is a synchronous version of the same queries, behind the <code>blocking</code> feature.</li>
   </ul>
-
-  <h2>Databases</h2>
-  <p>Orbit works with MySQL and MariaDB. It does not support other databases yet.</p>
 
   <h2>Where to start</h2>
   <p>Add the crate with the steps in <a href="/docs/install">Installation</a>, then connect as shown in <a href="/docs/connecting">Connecting</a>.</p>

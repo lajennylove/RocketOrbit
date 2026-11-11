@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title') · Orbit</title>
-    <meta name="description" content="@yield('description', 'Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, with a query builder, transactions and migrations.')">
+    <meta name="description" content="@yield('description', 'Orbit is an ORM for Rocket.rs apps. It maps MySQL, MariaDB, PostgreSQL and SQLite tables to Rust types, with a query builder, transactions and migrations.')">
     <meta name="robots" content="@yield('robots', 'index,follow')">
     <link rel="canonical" href="{{ $canonical }}">
     <link rel="icon" href="{{ asset('resources/images/favicon.ico') }}" sizes="any">
@@ -18,15 +18,15 @@
     <meta property="og:image:alt" content="The Orbit banner: a ringed planet above the words ROCKETBOOST and ORBIT">
     <meta property="og:type" content="@yield('og_type', 'article')">
     <meta property="og:title" content="@yield('title') · Orbit">
-    <meta property="og:description" content="@yield('description', 'Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, with a query builder, transactions and migrations.')">
+    <meta property="og:description" content="@yield('description', 'Orbit is an ORM for Rocket.rs apps. It maps MySQL, MariaDB, PostgreSQL and SQLite tables to Rust types, with a query builder, transactions and migrations.')">
     <meta property="og:url" content="{{ $canonical }}">
     <meta property="og:locale" content="en_US">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="@yield('title') · Orbit">
-    <meta name="twitter:description" content="@yield('description', 'Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, with a query builder, transactions and migrations.')">
+    <meta name="twitter:description" content="@yield('description', 'Orbit is an ORM for Rocket.rs apps. It maps MySQL, MariaDB, PostgreSQL and SQLite tables to Rust types, with a query builder, transactions and migrations.')">
     <meta name="twitter:image" content="{{ $og_image }}">
     @sectionMissing('structured_data')
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"@yield('title')","url":"{{ $canonical }}","description":"@yield('description', 'Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, with a query builder, transactions and migrations.')"}</script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"@yield('title')","url":"{{ $canonical }}","description":"@yield('description', 'Orbit is an ORM for Rocket.rs apps. It maps MySQL, MariaDB, PostgreSQL and SQLite tables to Rust types, with a query builder, transactions and migrations.')"}</script>
     @endif
     @yield('structured_data')
     @vite(['resources/css/app.css', 'resources/js/app.js'])

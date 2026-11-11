@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
 @section('title')Migrations@endsection
-@section('description')Orbit migrations: the folder layout and timestamp rule, running, checking the status and rolling back with Migrator, the migrations lock, embedding with the migrations macro, and importing a Diesel history.@endsection
+@section('description')Orbit migrations: the folder layout and timestamp rule, running, checking the status and rolling back with Migrator, the migrations lock, embedding with the migrations macro, and Diesel's migrations table.@endsection
 
 @section('content')
   <h1>{{ $title }}</h1>
-  <p>A migration changes the schema. Orbit's migrations are folders of SQL. The migrator applies them, records each one in a <code>migrations</code> table with its batch number, and rolls back the last batch on request.</p>
+  <p>A migration changes the schema. Orbit's migrations are folders of SQL. The migrator applies them, records each one in the <code>__diesel_schema_migrations</code> table with its batch number, and rolls back the last batch on request. The table has the same name on MySQL, PostgreSQL and SQLite. It is Diesel's table, not Laravel's <code>migrations</code>; see <a href="/docs/introduction">Introduction</a>.</p>
 
   <h2>Layout</h2>
   <p>Each migration is a folder named <code>&lt;timestamp&gt;_&lt;name&gt;</code>, with an <code>up.sql</code> that applies it and a <code>down.sql</code> that reverts it:</p>
@@ -35,19 +35,19 @@ migrator.rollback(&amp;db).await?;             // reverts the last batch, in rev
     <li><code>status</code> lists each migration of this migrator as <code>State::Applied { batch }</code> or <code>State::Pending</code>. Applied migrations that have no folder here are not listed.</li>
     <li><code>rollback</code> reverts the last batch. It runs each <code>down.sql</code> in reverse name order, each in its own transaction. Before it reverts anything, it checks that every migration in the batch has a folder here. It returns the names it reverted, or nothing when no migration has run.</li>
   </ul>
-  <p>The <code>migrations</code> table is created the first time a migrator reads or changes it.</p>
+  <p>The <code>__diesel_schema_migrations</code> table is created the first time a migrator reads or changes it.</p>
   <p>Orbit has no command-line tool. Call the migrator from your own code, for example from a binary you write.</p>
 
-  <h2>DDL is not rolled back</h2>
-  <p>MySQL does not roll back DDL, such as <code>CREATE TABLE</code>. A migration that fails can leave the DDL it ran before the failure in place. Only its data changes are rolled back.</p>
+  <h2>DDL is not rolled back on MySQL</h2>
+  <p>MySQL does not roll back DDL, such as <code>CREATE TABLE</code>. A migration that fails on MySQL can leave the DDL it ran before the failure in place. Only its data changes are rolled back. PostgreSQL and SQLite roll back the whole migration.</p>
 
   <h2>One process at a time</h2>
-  <p><code>run</code>, <code>rollback</code> and <code>import_diesel_history</code> hold a MySQL lock named <code>orbit_migrations</code> for the whole run. A second process waits up to 10 seconds. If the lock is still held, the call fails with <code>MigrationsLocked</code>. Change the wait with <code>with_lock_timeout</code>:</p>
+  <p><code>run</code>, <code>rollback</code> and <code>import_diesel_history</code> hold a lock named after the database for the whole run: a named lock on MySQL, and an advisory lock on PostgreSQL. A second process waits up to 10 seconds. If the lock is still held, the call fails with <code>MigrationsLocked</code>. Change the wait with <code>with_lock_timeout</code>:</p>
   <pre class="line-numbers"><code class="language-rust">use std::time::Duration;
 
 let migrator = Migrator::from_dir("migrations")?
     .with_lock_timeout(Duration::from_secs(30));</code></pre>
-  <p><code>status</code> does not take the lock.</p>
+  <p><code>status</code> does not take the lock. SQLite has no named or advisory lock, so its lock covers one process only. On SQLite, run migrations from one process, for example from a deploy step.</p>
 
   <h2>Embedded migrations</h2>
   <p>The <code>migrations!</code> macro embeds the files in the binary at build time. Its first argument is the folder, relative to the crate root. Then list the migration names by hand. A missing file is a build error. The macro returns <code>Result&lt;Migrator, Error&gt;</code>:</p>
@@ -55,8 +55,7 @@ let migrator = Migrator::from_dir("migrations")?
   <p>A migrator can also be built from code, with <code>Migration::new(name, up, down)</code> and <code>Migrator::new(vec)</code>.</p>
 
   <h2>Importing a Diesel history</h2>
-  <p>To move a project from Diesel, record the migrations that Diesel has already applied. <code>import_diesel_history</code> reads Diesel's <code>__diesel_schema_migrations</code> table and records each migration with a matching folder that is not yet recorded. It records them in one new batch, in name order. It runs no <code>up.sql</code>, and it does not change Diesel's table. A second call imports nothing. When Diesel's table does not exist, it returns nothing.</p>
-  <pre class="line-numbers"><code class="language-rust">let imported = migrator.import_diesel_history(&amp;db).await?;
-let unmatched = migrator.unmatched_diesel_versions(&amp;db).await?;</code></pre>
-  <p><code>unmatched_diesel_versions</code> lists the versions in Diesel's table that have no folder in this migrator, in order. The import leaves them out, so you decide what to do with them.</p>
+  <p>Orbit uses Diesel's <code>__diesel_schema_migrations</code> table, so a database that Diesel migrated already has its history, recorded in batch 0. Nothing needs to be imported. <code>run</code>, <code>status</code> and <code>rollback</code> add the <code>batch</code> column to that table the first time they use it. <code>import_diesel_history</code> is deprecated and now only creates the table if it is missing; it returns an empty list.</p>
+  <pre class="line-numbers"><code class="language-rust">let unmatched = migrator.unmatched_diesel_versions(&amp;db).await?;</code></pre>
+  <p><code>unmatched_diesel_versions</code> lists the versions in Diesel's table that have no folder in this migrator, in order. It only reads the table. You decide what to do with them.</p>
 @endsection

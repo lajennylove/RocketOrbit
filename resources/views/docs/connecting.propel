@@ -8,7 +8,7 @@
   <p>A <code>Database</code> is the connection pool for one database. Connect once, at startup, and share the value with the routes, for example in Rocket's managed state or behind an <code>Arc</code>. A <code>Database</code> is not <code>Clone</code>.</p>
 
   <h2>Connect</h2>
-  <p>Pass the connection URL to <code>Database::connect</code>. It has the form <code>mysql://user:password@host/database</code>:</p>
+  <p>Pass the connection URL to <code>Database::connect</code>. The URL's scheme chooses the database: <code>mysql://user:password@host/database</code> for MySQL, <code>postgres://user:password@host/database</code> for PostgreSQL, or <code>sqlite:///path/to/app.db?mode=rwc</code> for SQLite. The example uses MySQL:</p>
   <pre class="line-numbers"><code class="language-rust">use orbit_orm::Database;
 
 let db = Database::connect("mysql://user:password@127.0.0.1/app").await?;</code></pre>
@@ -22,7 +22,7 @@ let db = Database::connect("mysql://user:password@127.0.0.1/app").await?;</code>
   <p>The pool keeps up to 5 connections. A query that finds none free waits up to 10 seconds, then fails. These limits are fixed in this version, and there is no setting for them.</p>
 
   <h2>The raw pool</h2>
-  <p><code>db.pool()</code> gives the <code>sqlx</code> <code>MySqlPool</code>, for queries that Orbit does not wrap yet. Inside a transaction, <code>tx.connection()</code> gives the transaction's connection. See <a href="/docs/transactions">Transactions</a>.</p>
+  <p><code>db.pool()</code> gives the <code>sqlx</code> <code>MySqlPool</code>, for queries that Orbit does not wrap yet. It panics when the database is not MySQL, so check <code>driver()</code> first, or use <code>postgres_pool()</code> or <code>sqlite_pool()</code>, which return an <code>Option</code>. Inside a transaction, <code>tx.connection()</code> gives the transaction's connection. See <a href="/docs/transactions">Transactions</a>.</p>
 
   <h2>Close</h2>
   <p><code>close</code> closes every connection in the pool:</p>
