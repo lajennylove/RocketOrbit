@@ -23,7 +23,7 @@ let id = db
     .await?;</code></pre>
 
   <h2>Queries in the transaction</h2>
-  <p>A query that must run inside the transaction takes it as <code>&amp;mut *tx</code>. A query given <code>&amp;db</code> runs on the pool, outside the transaction. <code>tx.connection()</code> gives the transaction's connection, for SQL that Orbit does not wrap.</p>
+  <p>A query that must run inside the transaction takes it as <code>&amp;mut *tx</code>. A query given <code>&amp;db</code> runs on the pool, outside the transaction. <code>tx.connection()</code> gives the transaction's connection, for SQL that Orbit does not wrap. It is for MySQL only: it exists when the <code>mysql</code> feature is on, and it panics when the transaction is on PostgreSQL or SQLite. Check <code>tx.driver()</code> first. The <code>raw</code> functions, which take <code>&amp;mut *tx</code>, work on every database. See <a href="/docs/queries">Queries</a>.</p>
 
   <h2>Commit and rollback</h2>
   <ul>

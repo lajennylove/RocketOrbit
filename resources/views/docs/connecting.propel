@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title')Connecting@endsection
-@section('description')How to open an Orbit database with Database::connect, check it with ping, read the connection pool's limits, use the raw pool, and close it.@endsection
+@section('description')How to open an Orbit database with Database::connect, set the connection pool's limits with connect_with and PoolOptions, check it with ping, use the raw pool, and close it.@endsection
 
 @section('content')
   <h1>{{ $title }}</h1>
@@ -19,10 +19,24 @@ let db = Database::connect("mysql://user:password@127.0.0.1/app").await?;</code>
   <pre class="line-numbers"><code class="language-rust">db.ping().await?;</code></pre>
 
   <h2>The pool</h2>
-  <p>The pool keeps up to 5 connections. A query that finds none free waits up to 10 seconds, then fails. These limits are fixed in this version, and there is no setting for them.</p>
+  <p><code>connect</code> uses the default pool settings: at most 5 connections open at once, a request that finds none free waits up to 10 seconds and then fails, and no connection is kept open while idle. <code>connect_with</code> takes a <code>PoolOptions</code> to change them:</p>
+  <pre class="line-numbers"><code class="language-rust">use std::time::Duration;
+use orbit_orm::{Database, PoolOptions};
+
+let options = PoolOptions {
+    max_connections: 20,
+    acquire_timeout: Duration::from_secs(5),
+    ..PoolOptions::default()
+};
+let db = Database::connect_with("mysql://user:password@127.0.0.1/app", options).await?;</code></pre>
+  <ul>
+    <li><code>max_connections</code>, the most connections the pool opens at once. Further requests wait for one to be released.</li>
+    <li><code>acquire_timeout</code>, how long a request waits for a connection before it fails.</li>
+    <li><code>min_connections</code>, the connections the pool keeps open while idle. It is 0 by default.</li>
+  </ul>
 
   <h2>The raw pool</h2>
-  <p><code>db.pool()</code> gives the <code>sqlx</code> <code>MySqlPool</code>, for queries that Orbit does not wrap yet. It panics when the database is not MySQL, so check <code>driver()</code> first, or use <code>postgres_pool()</code> or <code>sqlite_pool()</code>, which return an <code>Option</code>. Inside a transaction, <code>tx.connection()</code> gives the transaction's connection. See <a href="/docs/transactions">Transactions</a>.</p>
+  <p><code>db.pool()</code> gives the <code>sqlx</code> <code>MySqlPool</code>, for queries that Orbit does not wrap yet. It panics when the database is not MySQL, so check <code>driver()</code> first, or use <code>postgres_pool()</code> or <code>sqlite_pool()</code>, which return an <code>Option</code>. Inside a transaction, <code>tx.connection()</code> gives the transaction's MySQL connection, and panics on other databases. See <a href="/docs/transactions">Transactions</a>.</p>
 
   <h2>Close</h2>
   <p><code>close</code> closes every connection in the pool:</p>
