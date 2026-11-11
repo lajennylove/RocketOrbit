@@ -14,6 +14,7 @@ fn main() {
         .view("docs.migrations", PAGE)
         .view("docs.blocking", PAGE)
         .view("docs.differences", PAGE)
+        .view("home", PAGE)
         .view("errors.not_found", PAGE)
         .build();
 }

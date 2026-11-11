@@ -34,6 +34,7 @@ pub(crate) fn render_page(name: &str, context: &DocPage) -> PropelView {
         "docs.migrations" => compiled::docs::migrations::render(context, &assets),
         "docs.blocking" => compiled::docs::blocking::render(context, &assets),
         "docs.differences" => compiled::docs::differences::render(context, &assets),
+        "home" => compiled::home::render(context, &assets),
         "errors.not_found" => compiled::errors::not_found::render(context, &assets),
         other => panic!("no compiled view named `{other}`"),
     };
