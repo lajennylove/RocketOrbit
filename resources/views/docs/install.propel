@@ -1,17 +1,17 @@
 @extends('layouts.app')
 
 @section('title')Installation@endsection
-@section('description')How to add Orbit to a Rocket.rs app from git, with its derive and blocking features, and the sqlx version a hand-written model needs.@endsection
+@section('description')How to add Orbit to a Rocket.rs app from crates.io, with its derive and blocking features, and the sqlx version a hand-written model needs.@endsection
 
 @section('content')
   <h1>{{ $title }}</h1>
-  <p>Orbit is a Rust crate. It needs a Rust toolchain that supports edition 2024, which is Rust 1.85 or newer, and a server for MySQL, MariaDB, PostgreSQL or SQLite. Orbit is added from its git repository.</p>
+  <p>Orbit is a Rust crate. It needs a Rust toolchain that supports edition 2024, which is Rust 1.85 or newer, and a server for MySQL, MariaDB, PostgreSQL or SQLite. Orbit is published on <a href="https://crates.io/crates/orbit-orm">crates.io</a> as <code>orbit-orm</code>.</p>
 
   <h2>Add the crate</h2>
-  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --git https://github.com/lajennylove/Orbit</code></pre>
+  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm</code></pre>
   <p>The same dependency in <code>Cargo.toml</code>:</p>
   <pre class="line-numbers"><code class="language-toml">[dependencies]
-orbit-orm = { git = "https://github.com/lajennylove/Orbit" }</code></pre>
+orbit-orm = "0.1.0"</code></pre>
   <p>The package is <code>orbit-orm</code>, and the Rust crate name is <code>orbit_orm</code>, so the code imports from <code>orbit_orm</code>.</p>
 
   <h2>Features</h2>
@@ -22,12 +22,14 @@ orbit-orm = { git = "https://github.com/lajennylove/Orbit" }</code></pre>
     <li><code>postgres</code> adds PostgreSQL, and <code>sqlite</code> adds SQLite. Both are off by default.</li>
   </ul>
   <p>To turn on the blocking API:</p>
-  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --features blocking --git https://github.com/lajennylove/Orbit</code></pre>
-  <p>To add PostgreSQL and SQLite as well as MySQL:</p>
-  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --features postgres,sqlite --git https://github.com/lajennylove/Orbit</code></pre>
+  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --features blocking</code></pre>
+  <p>To add PostgreSQL as well as MySQL:</p>
+  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --features postgres</code></pre>
+  <p>To use SQLite instead of MySQL:</p>
+  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --no-default-features --features sqlite</code></pre>
   <p>To leave out the derive, turn off the default features and keep <code>mysql</code>:</p>
   <pre class="line-numbers"><code class="language-toml">[dependencies]
-orbit-orm = { git = "https://github.com/lajennylove/Orbit", default-features = false, features = ["mysql"] }</code></pre>
+orbit-orm = { version = "0.1.0", default-features = false, features = ["mysql"] }</code></pre>
 
   <h2>Async runtime</h2>
   <p>The async API runs on Tokio. A Rocket app already runs on Tokio, so nothing more is needed. A plain binary needs a runtime, such as <code>#[tokio::main]</code>.</p>
