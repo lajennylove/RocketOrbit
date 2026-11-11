@@ -4,6 +4,7 @@
 @section('description')Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, with a query builder, transactions, migrations and a blocking API.@endsection
 
 @section('content')
+  <img src="{{ asset('resources/images/orbit-logo.webp') }}" alt="RocketBoost Orbit" class="mx-auto mb-8 block w-full max-w-[632px]" width="632" height="557" fetchpriority="high">
   <h1>{{ $title }}</h1>
   <p>Orbit is an ORM for Rocket.rs apps. It maps MySQL and MariaDB tables to Rust types, and runs queries, transactions and migrations against them. Its names follow Laravel's Eloquent and query builder, so most of it will be familiar to a Laravel developer. <a href="/docs/differences">Differences from Laravel</a> lists where Orbit departs from Laravel.</p>
 
