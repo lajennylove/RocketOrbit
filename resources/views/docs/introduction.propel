@@ -9,7 +9,7 @@
   <p>Orbit is an ORM for Rocket.rs apps. It maps MySQL, MariaDB, PostgreSQL and SQLite tables to Rust types, and runs queries, transactions and migrations against them. Its names follow Laravel's Eloquent and query builder, so most of it will be familiar to a Laravel developer. <a href="/docs/differences">Differences from Laravel</a> lists where Orbit departs from Laravel.</p>
 
   <h2>Databases</h2>
-  <p>Orbit supports MySQL, MariaDB, PostgreSQL and SQLite. The URL's scheme chooses the database: <code>mysql://</code> (or <code>mariadb://</code>), <code>postgres://</code> and <code>sqlite://</code>. MySQL is the default feature. PostgreSQL and SQLite are optional features, and <a href="/docs/install">Installation</a> shows how to turn them on.</p>
+  <p>Orbit supports MySQL, MariaDB, PostgreSQL and SQLite. The URL's scheme chooses the database: <code>mysql://</code> (or <code>mariadb://</code>), <code>postgres://</code> (or <code>postgresql://</code>) and <code>sqlite://</code>. MySQL is the default feature. PostgreSQL and SQLite are optional features, and <a href="/docs/install">Installation</a> shows how to turn them on.</p>
   <div class="my-8 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
     <a href="https://www.mysql.com" target="_new" rel="noopener" class="flex flex-col items-center gap-3 text-center no-underline hover:underline">
       <span class="flex h-14 items-center justify-center"><img src="{{ asset('resources/images/db/mysql-167x86.png') }}" alt="MySQL logo" width="167" height="86" class="h-auto max-h-14 w-auto max-w-full"></span>
