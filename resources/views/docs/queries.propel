@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
 @section('title')Queries@endsection
-@section('description')The Orbit query builder: where, or_where, grouped conditions, order_by, select, limit, offset, the terminal methods get, first, find, count and exists, the writes insert, replace, update and delete, and for_update.@endsection
+@section('description')The Orbit query builder: where, or_where, grouped conditions, order_by, select, limit, offset, the terminal methods get, first, find, count, exists, get_as and first_as, the writes insert, replace, update and delete, for_update, identifier quoting, and the raw SQL functions.@endsection
 
 @section('content')
   <h1>{{ $title }}</h1>
-  <p>A query starts with <code>Model::query()</code>, or with <code>Query::table()</code> when you have no model. Builder methods return the query, and a terminal method runs it. A terminal method takes the database, as <code>&amp;db</code>, or a transaction, as <code>&amp;mut *tx</code>:</p>
+  <p>A query starts with <code>Model::query()</code>, or with <code>Query::&lt;Model&gt;::table()</code>, which takes the model type as its parameter and uses that model's table. Builder methods return the query, and a terminal method runs it. A terminal method takes the database, as <code>&amp;db</code>, or a transaction, as <code>&amp;mut *tx</code>:</p>
   <pre class="line-numbers"><code class="language-rust">use orbit_orm::{Database, Direction, Model, Operator, Query};
 
 let db = Database::connect("mysql://user:password@127.0.0.1/app").await?;
@@ -47,6 +47,7 @@ let popular = Post::query()
   <ul>
     <li><code>get(db)</code> returns every matching row, as a <code>Vec</code>.</li>
     <li><code>first(db)</code> returns the first row, or <code>None</code>. It has no default order, so call <code>order_by</code> when the row matters.</li>
+    <li><code>get_as::&lt;T&gt;(db)</code> and <code>first_as::&lt;T&gt;(db)</code> return the rows decoded as <code>T</code> instead of the model. Use them with <code>select</code> to read some columns into a tuple, or into a struct that implements <code>FromRow</code>. The clauses are the same as <code>get</code> and <code>first</code>.</li>
     <li><code>first_or_fail(db)</code> is <code>first</code>, and returns <code>Error::NotFound</code> when no row matches.</li>
     <li><code>find(db, id)</code> returns the row whose primary key is <code>id</code>, or <code>None</code>.</li>
     <li><code>find_or_fail(db, id)</code> is <code>find</code>, and returns <code>Error::NotFound</code> when no row matches.</li>
@@ -74,7 +75,7 @@ let affected = Query::&lt;Post&gt;::table()
     .await?;</code></pre>
 
   <h2>Values and names</h2>
-  <p>Every value is sent as a bound parameter, never as SQL text. Table and column names are quoted with backticks. A name that is empty or contains a backtick is an error, <code>Error::InvalidIdentifier</code>.</p>
+  <p>Every value is sent as a bound parameter, never as SQL text. Table and column names are quoted for the database: with backticks on MySQL, and with double quotes on PostgreSQL and SQLite. A name that is empty or contains a backtick or a double quote is an error on every database, <code>Error::InvalidIdentifier</code>.</p>
 
   <h2>Row locks</h2>
   <p><code>for_update()</code> adds <code>FOR UPDATE</code> to <code>get</code>, <code>first</code>, <code>find</code>, <code>count</code> and <code>exists</code>. Inside a transaction, the lock lasts until the transaction ends. Outside one, the statement runs in autocommit and the lock lasts only for that statement. See <a href="/docs/transactions">Transactions</a>.</p>
@@ -83,4 +84,22 @@ let affected = Query::&lt;Post&gt;::table()
     .for_update()
     .first_or_fail(&amp;mut *tx)
     .await?;</code></pre>
+
+  <h2>Raw SQL</h2>
+  <p>The <code>raw</code> module runs SQL that the builder does not cover. Each function takes <code>&amp;db</code> or <code>&amp;mut *tx</code>, as the terminal methods do. The SQL string is not escaped or checked, so it must not contain user input. Put every value in <code>binds</code>, in the order of the <code>?</code> placeholders. Write <code>?</code> on every database, since Orbit numbers them on PostgreSQL itself.</p>
+  <ul>
+    <li><code>raw::execute(db, sql, binds)</code> runs a statement that changes rows, such as <code>UPDATE</code>, and returns the rows affected as a <code>u64</code>.</li>
+    <li><code>raw::fetch_all(db, sql, binds)</code> runs a <code>SELECT</code> and returns every row, as a <code>Vec</code>.</li>
+    <li><code>raw::fetch_optional(db, sql, binds)</code> runs a <code>SELECT</code> and returns its first row, or <code>None</code>.</li>
+    <li><code>raw::fetch_scalar(db, sql, binds)</code> runs a <code>SELECT</code> with one column, such as <code>SELECT COUNT(*)</code>, and returns its first value. It is an error when no row comes back.</li>
+  </ul>
+  <p>The rows decode as a tuple of column types, or as a struct that implements <code>FromRow</code>.</p>
+  <pre class="line-numbers"><code class="language-rust">use orbit_orm::raw;
+
+let title: String = raw::fetch_scalar(
+    &amp;db,
+    "SELECT title FROM posts WHERE slug = ?",
+    &amp;[slug.into()],
+)
+.await?;</code></pre>
 @endsection
