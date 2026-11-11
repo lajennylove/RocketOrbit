@@ -26,7 +26,7 @@ orbit-orm = "0.1.0"</code></pre>
   <p>To add PostgreSQL as well as MySQL:</p>
   <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --features postgres</code></pre>
   <p>To use SQLite instead of MySQL:</p>
-  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --no-default-features --features sqlite</code></pre>
+  <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --no-default-features --features sqlite,derive</code></pre>
   <p>To leave out the derive, turn off the default features and keep <code>mysql</code>:</p>
   <pre class="line-numbers"><code class="language-toml">[dependencies]
 orbit-orm = { version = "0.1.0", default-features = false, features = ["mysql"] }</code></pre>
