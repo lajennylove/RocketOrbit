@@ -9,14 +9,15 @@ use nav::DocPage;
 use propel_rocket::PropelView;
 use rocket::fs::FileServer;
 use rocket::http::{ContentType, Status};
+use rocket::response::Redirect;
 
 /// The site's absolute address. Canonical links and the sitemap are built from it.
 pub const SITE_URL: &str = "https://orbit.rocketboost.rs";
 
-/// The landing page: the share banner and a link to the docs.
+/// The home page is the introduction.
 #[get("/")]
-fn home() -> PropelView {
-    views::render_page("home", &DocPage::new("/", "Orbit"))
+fn home() -> Redirect {
+    Redirect::to("/docs/introduction")
 }
 
 /// The documentation pages. The address must be in the sidebar, so only the
@@ -58,8 +59,8 @@ fn robots() -> (ContentType, String) {
 /// Every documentation page in the sidebar, in order.
 #[get("/sitemap.xml")]
 fn sitemap() -> (ContentType, String) {
-    let urls: String = std::iter::once("/".to_string())
-        .chain(nav::paths())
+    let urls: String = nav::paths()
+        .iter()
         .map(|path| {
             format!(
                 "  <url>\n    <loc>{SITE_URL}{path}</loc>\n    <lastmod>2026-11-10</lastmod>\n  </url>\n"
