@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
 @section('title')Migrations@endsection
-@section('description')Orbit migrations: the folder layout and timestamp rule, running, checking the status and rolling back with Migrator, the migrations lock, embedding with the migrations macro, and Diesel's migrations table.@endsection
+@section('description')Orbit migrations: the folder layout and timestamp rule, running, checking the status and rolling back with Migrator, the migrations lock, embedding with the migrations macro, schema builder migrations (in main, not yet on crates.io), and Diesel's migrations table.@endsection
 
 @section('content')
   <h1>{{ $title }}</h1>
-  <p>A migration changes the schema. Orbit's migrations are folders of SQL. The migrator applies them, records each one in the <code>__diesel_schema_migrations</code> table with its batch number, and rolls back the last batch on request. The table has the same name on MySQL, PostgreSQL and SQLite. It is Diesel's table, not Laravel's <code>migrations</code>; see <a href="/docs/introduction">Introduction</a>.</p>
+  <p>A migration changes the schema. Orbit's migrations are folders of SQL, or, in the main branch, statements written with the <a href="/docs/schema">schema builder</a>. The migrator applies them, records each one in the <code>__diesel_schema_migrations</code> table with its batch number, and rolls back the last batch on request. The table has the same name on MySQL, PostgreSQL and SQLite. It is Diesel's table, not Laravel's <code>migrations</code>; see <a href="/docs/introduction">Introduction</a>.</p>
 
   <h2>Layout</h2>
   <p>Each migration is a folder named <code>&lt;timestamp&gt;_&lt;name&gt;</code>, with an <code>up.sql</code> that applies it and a <code>down.sql</code> that reverts it:</p>
@@ -53,6 +53,28 @@ let migrator = Migrator::from_dir("migrations")?
   <p>The <code>migrations!</code> macro embeds the files in the binary at build time. Its first argument is the folder, relative to the crate root. Then list the migration names by hand. A missing file is a build error. The macro returns <code>Result&lt;Migrator, Error&gt;</code>:</p>
   <pre class="line-numbers"><code class="language-rust">let migrator = orbit_orm::migrations!("migrations", "20261108000000_create_users")?;</code></pre>
   <p>A migrator can also be built from code, with <code>Migration::new(name, up, down)</code> and <code>Migrator::new(vec)</code>.</p>
+
+  <h2 id="schema-migrations">Schema builder migrations</h2>
+  <p><strong>Not released yet.</strong> <code>Migration::schema</code> is in the main branch, not yet on crates.io. See <a href="/docs/install#unreleased">Installation</a>.</p>
+  <p>Next to SQL-string migrations, <code>Migration::schema(name, up, down)</code> takes the <code>up</code> and <code>down</code> statements as lists of <a href="/docs/schema">schema builder</a> statements. The migrator renders them for the connected database when it runs or rolls back the migration, so one migration serves SQLite, MySQL and MariaDB, and PostgreSQL:</p>
+  <pre class="line-numbers"><code class="language-rust">use orbit_orm::{schema, Migration, Migrator};
+
+let users = Migration::schema(
+    "20261108000000_create_users",
+    vec![schema::create("users", |t| {
+        t.id();
+        t.string("email");
+        t.unique(["email"]);
+    })],
+    vec![schema::drop_if_exists("users")],
+);
+let migrator = Migrator::new(vec![users])?;</code></pre>
+  <ul>
+    <li>The name follows the same rule as a folder name, so the timestamp and ordering rules above apply.</li>
+    <li>A statement that cannot be rendered, for example because of an invalid table name, fails the migration with that error, before any of its SQL runs.</li>
+    <li>Batches, the per-migration transaction, the lock and the MySQL DDL caveat are the same as for SQL migrations.</li>
+    <li>The public <code>up</code> and <code>down</code> fields of a schema migration are empty strings, because it carries statements instead.</li>
+  </ul>
 
   <h2>Importing a Diesel history</h2>
   <p>Orbit uses Diesel's <code>__diesel_schema_migrations</code> table, so a database that Diesel migrated already has its history, recorded in batch 0. Nothing needs to be imported. <code>run</code>, <code>status</code> and <code>rollback</code> add the <code>batch</code> column to that table the first time they use it. <code>import_diesel_history</code> is deprecated. It creates the migrations table if it is missing, adds the <code>batch</code> column if the table lacks it, and returns an empty list. It records no rows and runs no <code>up.sql</code>.</p>

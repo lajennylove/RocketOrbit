@@ -124,7 +124,8 @@
     <li><a href="/docs/queries">Queries</a> build <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code> and <code>REPLACE</code> statements. Values are always sent as bound parameters.</li>
     <li><a href="/docs/transactions">Transactions</a> commit when a closure returns <code>Ok</code> and roll back when it returns <code>Err</code> or panics.</li>
     <li><a href="/docs/errors">Errors</a> lists the typed errors, such as unique and foreign key violations, deadlocks and lock wait timeouts.</li>
-    <li><a href="/docs/migrations">Migrations</a> apply and revert folders of SQL, and keep Diesel's migrations table, so a Diesel project keeps its history.</li>
+    <li><a href="/docs/schema">Schema builder</a> describes a table once and renders it for every database. It is in the main branch and not yet on crates.io.</li>
+    <li><a href="/docs/migrations">Migrations</a> apply and revert folders of SQL, or schema builder statements, and keep Diesel's migrations table, so a Diesel project keeps its history.</li>
     <li><a href="/docs/blocking">Blocking API</a> is a synchronous version of the same queries, behind the <code>blocking</code> feature.</li>
   </ul>
 

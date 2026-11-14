@@ -61,7 +61,13 @@ fn groups() -> Vec<Group> {
                 ("/docs/errors", "Errors"),
             ],
         ),
-        group("Schema", &[("/docs/migrations", "Migrations")]),
+        group(
+            "Schema",
+            &[
+                ("/docs/schema", "Schema builder"),
+                ("/docs/migrations", "Migrations"),
+            ],
+        ),
         group("Advanced", &[("/docs/blocking", "Blocking API")]),
         group(
             "Reference",

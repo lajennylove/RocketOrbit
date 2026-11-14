@@ -11,6 +11,7 @@ fn main() {
         .view("docs.queries", PAGE)
         .view("docs.transactions", PAGE)
         .view("docs.errors", PAGE)
+        .view("docs.schema", PAGE)
         .view("docs.migrations", PAGE)
         .view("docs.blocking", PAGE)
         .view("docs.differences", PAGE)

@@ -30,14 +30,14 @@ match Post::query().insert(&amp;db, &amp;[("title", "Hello".into())]).await {
   <ul>
     <li><code>NotFound { table }</code>: <code>first_or_fail</code> or <code>find_or_fail</code> found no row.</li>
     <li><code>NotFillable { table, column }</code>: <code>insert</code>, <code>replace</code> or <code>update</code> named a column that is not in the model's <code>FILLABLE</code> list.</li>
-    <li><code>InvalidIdentifier(name)</code>: a table or column name is empty or contains a backtick or a double quote.</li>
+    <li><code>InvalidIdentifier(name)</code>: a table or column name is empty or contains a backtick or a double quote. The <a href="/docs/schema">schema builder</a> returns it from <code>try_to_sql</code> for a table, column or index name.</li>
     <li><code>BlockingInRuntime</code>: a blocking call ran on a thread that runs async code. Call it inside <code>tokio::task::spawn_blocking</code>. See <a href="/docs/blocking">Blocking API</a>.</li>
   </ul>
 
   <h2>Connection and support errors</h2>
   <ul>
     <li><code>UnsupportedDriver { scheme }</code>: the URL's scheme names a database whose Cargo feature is not enabled in this build, or names no database. <code>scheme</code> is the part before the first <code>:</code>, never the password. See <a href="/docs/connecting">Connecting</a>.</li>
-    <li><code>Unsupported { operation, driver }</code>: the database has no equivalent for the operation. <code>operation</code> names it, and <code>driver</code> names the database. For example, <code>replace</code> on PostgreSQL returns <code>operation: "replace"</code>, <code>driver: "PostgreSQL"</code>.</li>
+    <li><code>Unsupported { operation, driver }</code>: the database has no equivalent for the operation. <code>operation</code> names it, and <code>driver</code> names the database. For example, <code>replace</code> on PostgreSQL returns <code>operation: "replace"</code>, <code>driver: "PostgreSQL"</code>. The schema builder also returns it for a foreign key without <code>references</code> and for a column default that has no SQL literal.</li>
   </ul>
 
   <h2>Migration errors</h2>

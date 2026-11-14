@@ -31,6 +31,7 @@ pub(crate) fn render_page(name: &str, context: &DocPage) -> PropelView {
         "docs.queries" => compiled::docs::queries::render(context, &assets),
         "docs.transactions" => compiled::docs::transactions::render(context, &assets),
         "docs.errors" => compiled::docs::errors::render(context, &assets),
+        "docs.schema" => compiled::docs::schema::render(context, &assets),
         "docs.migrations" => compiled::docs::migrations::render(context, &assets),
         "docs.blocking" => compiled::docs::blocking::render(context, &assets),
         "docs.differences" => compiled::docs::differences::render(context, &assets),

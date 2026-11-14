@@ -1,0 +1,125 @@
+@extends('layouts.app')
+
+@section('title')Schema builder@endsection
+@section('description')The Orbit schema builder in the main branch, not yet on crates.io: orbit_orm::schema create, drop and drop_if_exists, the Blueprint column types, indexes and foreign keys, and Statement::to_sql and try_to_sql for SQLite, MySQL and MariaDB, and PostgreSQL.@endsection
+
+@section('content')
+  <h1>{{ $title }}</h1>
+  <p><strong>Not released yet.</strong> The schema builder is in the main branch of the Orbit repository and is not yet on crates.io. The published <code>orbit-orm</code> 0.1.0 does not have <code>orbit_orm::schema</code>. See <a href="/docs/install#unreleased">Installation</a> to use it from Git.</p>
+  <p><code>orbit_orm::schema</code> describes a table once and renders it for SQLite, MySQL and MariaDB, and PostgreSQL. Its names follow Laravel's <code>Schema::create</code> and <code>Blueprint</code>. A statement is only a description. It touches no database until it is rendered and run, or handed to a migration; see <a href="/docs/migrations">Migrations</a>.</p>
+
+  <h2>Create a table</h2>
+  <p><code>schema::create(table, closure)</code> takes the table name and a closure that receives a <code>Blueprint</code>. It returns a <code>Statement</code>:</p>
+  <pre class="line-numbers"><code class="language-rust">use orbit_orm::schema::{self, Action};
+
+let posts = schema::create("posts", |t| {
+    t.id();
+    t.string("title");
+    t.text("body").nullable();
+    t.big_integer("user_id");
+    t.foreign("user_id").references("users", "id").on_delete(Action::Restrict);
+    t.unique(["title"]);
+    t.timestamps();
+});</code></pre>
+
+  <h2>Drop a table</h2>
+  <ul>
+    <li><code>schema::drop(table)</code> drops the table. The database returns an error if the table does not exist.</li>
+    <li><code>schema::drop_if_exists(table)</code> drops the table if it exists.</li>
+  </ul>
+  <pre class="line-numbers"><code class="language-rust">let down = schema::drop_if_exists("posts");</code></pre>
+
+  <h2>Column types</h2>
+  <p>Each method on the <code>Blueprint</code> adds a column and returns it, so you can chain modifiers. The SQL type depends on the database:</p>
+  <div class="overflow-x-auto">
+  <table class="w-full min-w-[32rem] border-collapse text-[15px]">
+    <thead>
+      <tr>
+        <th scope="col" class="border-b border-hairline py-2 pr-4 text-left font-semibold text-heading">Method</th>
+        <th scope="col" class="border-b border-hairline py-2 pr-4 text-left font-semibold text-heading">MySQL and MariaDB</th>
+        <th scope="col" class="border-b border-hairline py-2 pr-4 text-left font-semibold text-heading">PostgreSQL</th>
+        <th scope="col" class="border-b border-hairline py-2 text-left font-semibold text-heading">SQLite</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="border-b border-hairline py-2 pr-4"><code>id()</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>BIGINT AUTO_INCREMENT PRIMARY KEY</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>BIGSERIAL PRIMARY KEY</code></td>
+        <td class="border-b border-hairline py-2"><code>INTEGER PRIMARY KEY AUTOINCREMENT</code></td>
+      </tr>
+      <tr>
+        <td class="border-b border-hairline py-2 pr-4"><code>string(name)</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>VARCHAR(255)</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>VARCHAR(255)</code></td>
+        <td class="border-b border-hairline py-2"><code>TEXT</code></td>
+      </tr>
+      <tr>
+        <td class="border-b border-hairline py-2 pr-4"><code>text(name)</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>TEXT</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>TEXT</code></td>
+        <td class="border-b border-hairline py-2"><code>TEXT</code></td>
+      </tr>
+      <tr>
+        <td class="border-b border-hairline py-2 pr-4"><code>integer(name)</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>INTEGER</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>INTEGER</code></td>
+        <td class="border-b border-hairline py-2"><code>INTEGER</code></td>
+      </tr>
+      <tr>
+        <td class="border-b border-hairline py-2 pr-4"><code>big_integer(name)</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>BIGINT</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>BIGINT</code></td>
+        <td class="border-b border-hairline py-2"><code>INTEGER</code>, which is 64-bit already</td>
+      </tr>
+      <tr>
+        <td class="border-b border-hairline py-2 pr-4"><code>boolean(name)</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>TINYINT(1)</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>BOOLEAN</code></td>
+        <td class="border-b border-hairline py-2"><code>TINYINT(1)</code></td>
+      </tr>
+      <tr>
+        <td class="border-b border-hairline py-2 pr-4"><code>date_time(name)</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>DATETIME</code></td>
+        <td class="border-b border-hairline py-2 pr-4"><code>TIMESTAMP(0) WITHOUT TIME ZONE</code></td>
+        <td class="border-b border-hairline py-2"><code>DATETIME</code></td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p><code>timestamps()</code> adds two nullable <code>date_time</code> columns, <code>created_at</code> and <code>updated_at</code>. It returns nothing, so it takes no modifiers.</p>
+
+  <h2>Column modifiers</h2>
+  <ul>
+    <li><code>nullable()</code> lets the column hold <code>NULL</code>. Columns are <code>NOT NULL</code> otherwise, as in Laravel.</li>
+    <li><code>default(value)</code> sets the default, written into the SQL as a literal, because DDL cannot take bound values. A float that is not finite, or a byte value, has no SQL literal and returns <code>Unsupported</code>.</li>
+    <li><code>length(n)</code> sets the length of a <code>string</code> column. It has no effect on other types, and SQLite ignores it because its type is <code>TEXT</code>.</li>
+  </ul>
+  <pre class="line-numbers"><code class="language-rust">schema::create("users", |t| {
+    t.id();
+    t.string("email").length(191);
+    t.boolean("active").default(true);
+});</code></pre>
+
+  <h2>Indexes and foreign keys</h2>
+  <ul>
+    <li><code>unique(columns)</code> adds a unique constraint over the columns, named <code>{table}_{columns}_unique</code>.</li>
+    <li><code>index(columns)</code> adds a plain index, named <code>{table}_{columns}_index</code>.</li>
+    <li><code>foreign(column)</code> adds a foreign key, named <code>{table}_{column}_foreign</code>. Chain <code>references(table, column)</code>, which is required, then optionally <code>on_delete(action)</code> and <code>on_update(action)</code>. A foreign key without <code>references</code> returns <code>Unsupported</code> when it is rendered.</li>
+  </ul>
+  <p><code>unique</code> and <code>index</code> take a list of column names, such as <code>["title"]</code> or <code>["user_id", "title"]</code>. The <code>Action</code> enum has <code>Cascade</code>, <code>Restrict</code>, <code>SetNull</code>, <code>SetDefault</code> and <code>NoAction</code>.</p>
+
+  <h2>Render and run</h2>
+  <p><code>Statement::to_sql(driver)</code> returns the SQL as a list, one statement per element, to run in order. The driver comes from <code>db.driver()</code>:</p>
+  <pre class="line-numbers"><code class="language-rust">for sql in posts.to_sql(db.driver()) {
+    orbit_orm::raw::execute(&amp;db, &amp;sql, &amp;[]).await?;
+}</code></pre>
+  <p>The list can hold more than one statement. MySQL and MariaDB put a plain <code>index</code> inside <code>CREATE TABLE</code>. PostgreSQL and SQLite create it with a separate <code>CREATE INDEX</code> after the table, and sqlx does not run several statements in one string on every database, so run each element on its own.</p>
+  <p><code>to_sql</code> panics when a name is invalid or a default has no SQL literal. <code>Statement::try_to_sql(driver)</code> returns <code>Result&lt;Vec&lt;String&gt;, Error&gt;</code> instead:</p>
+  <pre class="line-numbers"><code class="language-rust">let statements = posts.try_to_sql(db.driver())?;</code></pre>
+  <ul>
+    <li>A table, column or index column name must not be empty or contain a backtick or a double quote, the same rule as the query builder. Otherwise the error is <code>InvalidIdentifier</code>.</li>
+    <li>A foreign key without <code>references</code>, or a default with no literal, is <code>Unsupported</code>.</li>
+  </ul>
+  <p>See <a href="/docs/errors">Errors</a> for both errors.</p>
+@endsection

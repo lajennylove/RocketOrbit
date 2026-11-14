@@ -30,6 +30,12 @@ orbit-orm = "0.1.0"</code></pre>
   <p>To leave out the derive, turn off the default features and keep <code>mysql</code>:</p>
   <pre class="line-numbers"><code class="language-bash">cargo add orbit-orm --no-default-features --features mysql</code></pre>
 
+  <h2 id="unreleased">Unreleased features</h2>
+  <p>The <a href="/docs/schema">schema builder</a> and schema migrations (<code>Migration::schema</code>) are in the main branch of the <a href="https://github.com/lajennylove/Orbit">Orbit repository</a>, not yet on crates.io. <code>orbit-orm</code> 0.1.0 on crates.io does not have them. To use them now, depend on the repository:</p>
+  <pre class="line-numbers"><code class="language-toml">[dependencies]
+orbit-orm = { git = "https://github.com/lajennylove/Orbit", branch = "main" }</code></pre>
+  <p>Switch back to a crates.io version when they are released.</p>
+
   <h2>Async runtime</h2>
   <p>The async API runs on Tokio. A Rocket app already runs on Tokio, so nothing more is needed. A plain binary needs a runtime, such as <code>#[tokio::main]</code>.</p>
 
